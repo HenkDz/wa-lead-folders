@@ -7,7 +7,8 @@ const {
   normalizedPhone, whatsAppWebUrl, normalizedName, metaLeadFields, metaMatchStatus, metaThreadUrl,
   structuredLeadFields, contactIdentity, duplicateContactGroups, matchingContact, rowOffset, followUpBucket,
   phoneInText, normalizedUsername, usernamesIn,
-  whatsAppMessageTime, isLeadForm, scoreLead, isValidBackupState
+  whatsAppMessageTime, isLeadForm, scoreLead, isValidBackupState,
+  chatJidFromMessageId, jidPhone, sameNativeList, guessNativeList
 } = require("../classifier.js");
 
 test("normalizes only usable phone numbers", () => {
@@ -561,4 +562,42 @@ test("accepts only structurally valid backup state", () => {
   assert.equal(isValidBackupState({ ...valid, folders: [{ name: "Broken" }] }), false);
   assert.equal(isValidBackupState({ ...valid, contacts: [] }), false);
   assert.equal(isValidBackupState({ ...valid, contacts: { a: { id: "a", name: "A", folderId: "missing" } } }), false);
+});
+
+test("reads the chat id from WhatsApp message ids", () => {
+  assert.equal(chatJidFromMessageId("false_213555010101@c.us_3EB0C1A2B3C4D5E6F7"), "213555010101@c.us");
+  assert.equal(chatJidFromMessageId("true_213555010101@c.us_3EB0C1A2B3C4D5E6F7"), "213555010101@c.us");
+  assert.equal(chatJidFromMessageId("false_120363000000000000@g.us_3EB0AAAA_213555010101@c.us"), "120363000000000000@g.us");
+  assert.equal(chatJidFromMessageId("false_98765432101234@lid_3EB0AAAA"), "98765432101234@lid");
+  assert.equal(chatJidFromMessageId("conversation-panel"), null);
+  assert.equal(jidPhone("213555010101@c.us"), "+213555010101");
+  assert.equal(jidPhone("98765432101234@lid"), null);
+  assert.equal(jidPhone("120363000000000000@g.us"), null);
+});
+
+test("matches folders to WhatsApp lists by name or plural only", () => {
+  const lists = ["New order", "Lead", "VIP", "VVIP", "Cash Van", "Fabricant"];
+  assert.equal(guessNativeList("Cash Vans", lists), "Cash Van");
+  assert.equal(guessNativeList("vip", lists), "VIP");
+  assert.equal(guessNativeList("Leads", lists), "Lead");
+  assert.equal(guessNativeList("Producers", lists), null);
+  assert.equal(sameNativeList("VIP", "VVIP"), false);
+  assert.equal(sameNativeList(null, null), false);
+});
+
+test("drives WhatsApp lists through visible UI and keeps a structure report", () => {
+  const manifest = JSON.parse(readFileSync(join(__dirname, "..", "manifest.json"), "utf8"));
+  const lists = readFileSync(join(__dirname, "..", "native-lists.js"), "utf8");
+  const source = readFileSync(join(__dirname, "..", "content.js"), "utf8");
+  const popup = readFileSync(join(__dirname, "..", "popup.js"), "utf8");
+  assert.deepEqual(manifest.content_scripts[0].js, ["classifier.js", "native-lists.js", "content.js"]);
+  assert.match(lists, /function setActiveChatLists/);
+  assert.match(lists, /Toggling blind could remove a label/);
+  assert.match(lists, /async function probe/);
+  assert.match(source, /const nativeMode = Boolean/);
+  assert.match(source, /function importNativeMembers/);
+  assert.match(source, /function syncActiveChatNativeList/);
+  assert.match(source, /Not in the WhatsApp list yet/);
+  assert.match(source, /state\.chatBindings\[`jid:\$\{chat\.jid\}`\]/);
+  assert.match(popup, /\.\.\.folder,\s+id: folder\.id/);
 });

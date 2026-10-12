@@ -4,6 +4,8 @@ A small Chrome extension that adds a local lead desk to WhatsApp Web.
 
 ## What it does
 
+- Links folders to WhatsApp's own lists (Business labels): a linked tab opens that list so every member is reachable, rows seen there are imported into the folder, and assigning a folder adds or removes the list on the open chat. Lead tools → **WhatsApp lists** sets the links.
+- Remembers each chat's WhatsApp id (and phone, when WhatsApp exposes it) the first time it is opened, so saved leads reopen by number instead of by name.
 - Groups chats into persistent tabs such as **Wholesalers** and **Retailers**, so a long group never pushes the other groups out of view.
 - Keeps saved leads that are outside WhatsApp's current All list visible directly inside their group tab.
 - Suggests folders, scores visible lead forms, and holds uncertain forms in a review queue.
@@ -37,6 +39,8 @@ A small Chrome extension that adds a local lead desk to WhatsApp Web.
 5. Open a lead chat, click the green folder button, choose a folder, and press **Add**.
 
 Disable the older **WhatsApp Quick Contact** extension and reload Meta Inbox to avoid duplicate phone highlights.
+
+WhatsApp lists are driven through WhatsApp's visible UI (filter chips and the chat header's list menu). If a list stops syncing, open a chat, then Lead tools → **Copy structure report**: it copies an anonymised outline (digits masked, no message text) to share when updating the selectors.
 
 WhatsApp Web changes its private page markup occasionally. If chat detection stops working, update the selectors in `content.js`.
 

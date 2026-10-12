@@ -1114,6 +1114,71 @@
 #wa-lead-folders .walf-panel-score[data-level="warm"] { color: #8b6300; background: rgba(246, 200, 95, .18); }
 #wa-lead-folders .walf-panel-score[data-level="hot"] { color: #c74d3f; background: rgba(226, 92, 75, .15); }
 
+#wa-lead-folders .walf-native-links {
+  display: grid;
+  gap: 6px;
+  margin: 0 16px 16px;
+  padding: 12px 13px;
+  border: 1px solid var(--walf-line);
+  border-radius: 12px;
+  background: var(--walf-surface);
+}
+
+#wa-lead-folders .walf-native-links-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+#wa-lead-folders .walf-native-links-head button,
+#wa-lead-folders .walf-native-probe {
+  border: 0;
+  color: var(--walf-accent-strong);
+  background: transparent;
+  font-size: 11px;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+#wa-lead-folders .walf-native-probe {
+  justify-self: start;
+  margin-top: 4px;
+  padding: 0;
+  color: var(--walf-muted);
+}
+
+#wa-lead-folders .walf-native-links p {
+  margin: 0 0 4px;
+  color: var(--walf-muted);
+  font-size: 11px;
+}
+
+#wa-lead-folders .walf-native-link {
+  display: grid;
+  grid-template-columns: 8px minmax(0, 1fr) minmax(0, 132px);
+  gap: 9px;
+  align-items: center;
+  font-size: 12px;
+}
+
+#wa-lead-folders .walf-native-link i {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: var(--folder-color);
+}
+
+#wa-lead-folders .walf-native-link span {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+#wa-lead-folders .walf-native-link select {
+  min-height: 30px;
+  font-size: 12px;
+}
+
 #wa-lead-folders .walf-data-tools {
   display: flex;
   gap: 8px;

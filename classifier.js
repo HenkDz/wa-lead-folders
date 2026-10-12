@@ -336,6 +336,30 @@
     return null;
   }
 
+  // Message ids look like "false_213555010101@c.us_3EB0…" (group chats append the participant).
+  function chatJidFromMessageId(dataId) {
+    const match = /^(?:true|false)_([^_\s]+@(?:c\.us|s\.whatsapp\.net|lid|g\.us))_/.exec(String(dataId || ""));
+    return match ? match[1] : null;
+  }
+
+  function jidPhone(jid) {
+    const digits = /^(\d{6,15})@(?:c\.us|s\.whatsapp\.net)$/.exec(String(jid || ""))?.[1];
+    return digits ? normalizedPhone(`+${digits}`) || `+${digits}` : null;
+  }
+
+  function nativeListKey(name) {
+    return normalizedName(name).replace(/(?:es|s)$/u, "");
+  }
+
+  function sameNativeList(a, b) {
+    return Boolean(a && b) && nativeListKey(a) === nativeListKey(b);
+  }
+
+  // Exact or singular/plural match only ("Cash Vans" ↔ "Cash Van"); anything looser needs the user.
+  function guessNativeList(folderName, listNames) {
+    return (listNames || []).find((name) => sameNativeList(folderName, name)) || null;
+  }
+
   function rowOffset(nativeTransform, desiredY) {
     const nativeY = Number.parseFloat(/translateY\(([-\d.]+)px\)/.exec(nativeTransform || "")?.[1]) || 0;
     return desiredY - nativeY;
@@ -415,6 +439,7 @@
     normalizedPhone, phoneInText, whatsAppWebUrl, normalizedName, normalizedUsername, usernamesIn,
     metaLeadFields, structuredLeadFields,
     metaMatchStatus, metaThreadUrl, contactIdentity, duplicateContactGroups, matchingContact, rowOffset,
+    chatJidFromMessageId, jidPhone, nativeListKey, sameNativeList, guessNativeList,
     followUpBucket, whatsAppMessageTime,
     isLeadForm, scoreLead, isValidBackupState
   };

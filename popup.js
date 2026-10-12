@@ -379,6 +379,7 @@ function getLeadState(raw = {}) {
   ];
   const mapped = Array.isArray(raw.folders) && raw.folders.length
     ? raw.folders.map((folder) => ({
+      ...folder,
       id: folder.id,
       name: folder.name,
       color: folder.id === 'unknown' && (!folder.color || /^#(?:87938f|25d366)$/i.test(folder.color))

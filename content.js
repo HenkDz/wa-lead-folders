@@ -31,6 +31,10 @@
   const INLINE_TAB_HEIGHT = 48;
   const INLINE_MISSING_ROW_HEIGHT = 72;
   let activeInlineTabId = null;
+  const NativeLists = globalThis.WALeadNativeLists;
+  let lastNativeActive;
+  let nativeSyncBusy = false;
+  const nativeSyncAttempts = new Set();
 
   function storageApiAvailable() {
     const storage = typeof chrome !== "undefined" ? chrome.storage?.local : null;
@@ -110,7 +114,9 @@
       color: folder.id === "unknown" && (!folder.color || /^#(?:87938f|25d366)$/i.test(folder.color))
         ? UNKNOWN_COLOR
         : (typeof folder.color === "string" && folder.color ? folder.color : "#25d366"),
-      hidden: Boolean(folder.hidden)
+      hidden: Boolean(folder.hidden),
+      nativeList: typeof folder.nativeList === "string" && folder.nativeList.trim()
+        ? folder.nativeList.trim().slice(0, 60) : null
     };
   }
 
@@ -142,6 +148,9 @@
         ? Object.fromEntries(Object.entries(value.chatBindings)
           .filter(([key, id]) => key && typeof id === "string"))
         : {},
+      nativeListNames: Array.isArray(value.nativeListNames)
+        ? [...new Set(value.nativeListNames.filter((name) => typeof name === "string" && name.trim()))].slice(0, 50)
+        : [],
       groupingEnabled: value.groupingEnabled ?? true,
       autoFollowUpHours: Number.isFinite(Number(value.autoFollowUpHours))
         ? Math.min(720, Math.max(0, Number(value.autoFollowUpHours)))
@@ -154,7 +163,8 @@
   const hiddenFolders = () => state.folders.filter((folder) => folder.hidden);
   // Hide only removes folders from the chat list — they stay valid assignment and suggestion targets.
   const foldersForAssignment = () => state.folders;
-  const folderSignature = () => state.folders.map((folder) => `${folder.id}:${folder.name}:${folder.hidden ? 1 : 0}`).join(",");
+  const folderSignature = () => state.folders
+    .map((folder) => `${folder.id}:${folder.name}:${folder.hidden ? 1 : 0}:${folder.nativeList || ""}`).join(",");
   const ROW_HIDDEN_CHIP_LIMIT = 3;
 
   const isDue = (contact) => Boolean(contact?.remindAt && Date.parse(contact.remindAt) <= Date.now());
@@ -164,7 +174,8 @@
     : state.autoFollowUpHours ? localDateTime(Date.now() + state.autoFollowUpHours * 3600000) : null;
 
   const structuredFields = (text) => WALeadFoldersClassifier.structuredLeadFields(text || "");
-  const assignmentSource = (source) => source === "auto" ? "Auto rule" : source === "manual" ? "Manual" : "Legacy";
+  const assignmentSource = (source) => source === "auto" ? "Auto rule" : source === "manual" ? "Manual"
+    : source === "whatsapp" ? "WhatsApp list" : "Legacy";
 
   function scheduleUnscheduledContacts() {
     const contacts = Object.values(state.contacts).filter((contact) => !Object.hasOwn(contact, "remindAt"));
@@ -227,12 +238,17 @@
     const id = phone ? `phone:${phone.replace(/\D/g, "")}`
       : username ? `username:${username}`
         : contactId(name);
-    return { id, name, phone: phone || null, username: username || null, rowKey: stableRowKey(row) };
+    return { id, name, phone: phone || null, username: username || null, rowKey: stableRowKey(row), jid: extra.jid || null };
   }
 
   function rememberChatBinding(chat, contact) {
     if (!contact) return null;
     let changed = false;
+    if (chat?.jid && (contact.jid !== chat.jid || state.chatBindings[`jid:${chat.jid}`] !== contact.id)) {
+      contact.jid = chat.jid;
+      state.chatBindings[`jid:${chat.jid}`] = contact.id;
+      changed = true;
+    }
     if (chat?.rowKey && state.chatBindings[chat.rowKey] !== contact.id) {
       state.chatBindings[chat.rowKey] = contact.id;
       changed = true;
@@ -263,6 +279,9 @@
   }
 
   function resolveSavedContact(chat) {
+    // WhatsApp's own chat id is the strongest identity: names change, phones can be hidden.
+    const jidBound = chat?.jid ? state.contacts[state.chatBindings[`jid:${chat.jid}`]] : null;
+    if (jidBound) return rememberChatBinding(chat, jidBound);
     const matched = WALeadFoldersClassifier.matchingContact(state.contacts, chat, chat?.phone);
     const boundId = chat?.rowKey ? state.chatBindings[chat.rowKey] : null;
     if (boundId && !state.contacts[boundId]) delete state.chatBindings[chat.rowKey];
@@ -365,10 +384,21 @@
       .map((element) => element.getAttribute("title") || element.textContent?.trim())
       .filter(Boolean);
     const conversation = visibleConversationText();
+    const jid = activeChatJid();
     return describeVisibleChat(name, selectedRow, {
       text: [...bits, conversation].join("\n"),
-      phone: WALeadFoldersClassifier.phoneInText(conversation) || pendingQuickOpen?.phone || null
+      jid,
+      phone: WALeadFoldersClassifier.jidPhone(jid)
+        || WALeadFoldersClassifier.phoneInText(conversation) || pendingQuickOpen?.phone || null
     });
+  }
+
+  function activeChatJid() {
+    for (const element of document.querySelectorAll("#main [data-id]")) {
+      const jid = WALeadFoldersClassifier.chatJidFromMessageId(element.getAttribute("data-id"));
+      if (jid) return jid;
+    }
+    return null;
   }
 
   function savedContact(chat) {
@@ -431,6 +461,7 @@
 
   function contactPhone(contact) {
     return WALeadFoldersClassifier.normalizedPhone(contact?.phone)
+      || WALeadFoldersClassifier.jidPhone(contact?.jid)
       || WALeadFoldersClassifier.normalizedPhone(contact?.name)
       || (contact?.id?.startsWith("phone:")
         ? WALeadFoldersClassifier.normalizedPhone(contact.id.slice(6)) : null);
@@ -986,6 +1017,7 @@
       name: fields.fullName || chat.name,
       phone: phone || previous?.phone || null,
       username: chat.username || previous?.username || null,
+      jid: chat.jid || previous?.jid || null,
       aliases: [...new Set([...(previous?.aliases || []), chat.name, chat.username && `@${chat.username}`,
         fields.fullName].filter(Boolean))],
       fields: { ...(previous?.fields || {}), ...Object.fromEntries(Object.entries(fields).filter(([, value]) => value)) },
@@ -1180,6 +1212,9 @@
       const folderId = event.currentTarget.value;
       if (!folderId) {
         const existing = savedContact(chat);
+        if (existing?.nativeSynced) {
+          await NativeLists.setActiveChatLists({ remove: [existing.nativeSynced], knownNames: knownNativeLists() });
+        }
         if (existing?.id) delete state.contacts[existing.id];
         await saveState();
         toast(`${chat.name} removed from folders`);
@@ -1339,6 +1374,34 @@
     if (expand) actions.append(expand);
   }
 
+  function nativeLinksMarkup() {
+    const names = knownNativeLists();
+    const suggestions = state.folders.filter((folder) => !folder.nativeList
+      && WALeadFoldersClassifier.guessNativeList(folder.name, names));
+    const options = (folder) => [...new Set([...names, folder.nativeList].filter(Boolean))]
+      .map((name) => `<option value="${escapeHtml(name)}" ${name === folder.nativeList ? "selected" : ""}>${escapeHtml(name)}</option>`)
+      .join("");
+    return `
+      <section class="walf-native-links" aria-label="WhatsApp lists">
+        <div class="walf-native-links-head">
+          <span class="walf-section-label">WHATSAPP LISTS</span>
+          ${suggestions.length ? `<button type="button" data-action="link-suggested">Link ${suggestions.length} by name</button>` : ""}
+        </div>
+        <p>A linked folder opens WhatsApp's own list, so every lead shows up, and assignments sync to your phone.</p>
+        ${names.length ? "" : `<p class="walf-native-links-empty">No WhatsApp lists seen yet. They appear as filter chips above your chats.</p>`}
+        ${state.folders.map((folder) => `
+          <label class="walf-native-link">
+            <i style="--folder-color:${escapeHtml(folder.color)}"></i>
+            <span>${escapeHtml(folder.name)}</span>
+            <select data-folder-id="${escapeHtml(folder.id)}" aria-label="WhatsApp list for ${escapeHtml(folder.name)}">
+              <option value="">Not linked</option>${options(folder)}
+            </select>
+          </label>`).join("")}
+        <button type="button" class="walf-native-probe" data-action="probe">Copy structure report</button>
+      </section>
+    `;
+  }
+
   function renderPanel() {
     const duplicates = WALeadFoldersClassifier.duplicateContactGroups(state.contacts);
     panel.innerHTML = `
@@ -1360,6 +1423,7 @@
           <button type="button" data-action="new-folder">+ New folder</button>
         </div>
       </div>
+      ${nativeLinksMarkup()}
       <div class="walf-folders"></div>
       <footer class="walf-data-tools">
         <button type="button" data-action="backup">Backup JSON</button>
@@ -1369,6 +1433,39 @@
       </footer>
     `;
 
+    panel.querySelectorAll(".walf-native-link select").forEach((select) => {
+      select.addEventListener("change", async (event) => {
+        const folder = state.folders.find((item) => item.id === event.currentTarget.dataset.folderId);
+        if (!folder) return;
+        folder.nativeList = event.currentTarget.value || null;
+        await saveState();
+        renderPanel();
+        toast(folder.nativeList ? `${folder.name} linked to WhatsApp list ${folder.nativeList}` : `${folder.name} unlinked`);
+      });
+    });
+    panel.querySelector("[data-action='link-suggested']")?.addEventListener("click", async () => {
+      const names = knownNativeLists();
+      const linked = state.folders.filter((folder) => !folder.nativeList).map((folder) => {
+        folder.nativeList = WALeadFoldersClassifier.guessNativeList(folder.name, names);
+        return folder.nativeList ? folder : null;
+      }).filter(Boolean);
+      await saveState();
+      renderPanel();
+      toast(`${linked.length} folder${linked.length === 1 ? "" : "s"} linked`);
+    });
+    panel.querySelector("[data-action='probe']").addEventListener("click", async () => {
+      const report = JSON.stringify(await NativeLists.probe({
+        openMenu: Boolean(activeChat()),
+        knownNames: knownNativeLists()
+      }), null, 2);
+      try {
+        await navigator.clipboard.writeText(report);
+        toast("Structure report copied");
+      } catch {
+        downloadFile(`wa-structure-${new Date().toISOString().slice(0, 10)}.json`, "application/json", report);
+        toast("Structure report downloaded");
+      }
+    });
     panel.querySelector("[data-action='new-folder']").addEventListener("click", createFolder);
     panel.querySelector("[data-action='undo-bulk']")?.addEventListener("click", undoLastBulk);
     panel.querySelector("[data-action='reconcile']")?.addEventListener("click", reconcileContacts);
@@ -1450,6 +1547,100 @@
       });
       foldersRoot.append(card);
     });
+  }
+
+  function knownNativeLists() {
+    return [...new Set([...state.nativeListNames, ...NativeLists.listNames()])];
+  }
+
+  function rememberNativeListNames(names = []) {
+    const known = new Set(state.nativeListNames);
+    const fresh = names.filter((name) => name && !known.has(name));
+    if (!fresh.length) return;
+    state.nativeListNames = [...state.nativeListNames, ...fresh].slice(0, 50);
+    void persistState();
+    if (panel && !panel.hidden) renderPanel();
+  }
+
+  const linkedFolder = (listName) => listName
+    ? state.folders.find((folder) => WALeadFoldersClassifier.sameNativeList(folder.nativeList, listName)) || null
+    : null;
+
+  async function activateNativeForTab(tabId) {
+    const folder = state.folders.find((item) => item.id === tabId);
+    if (folder?.nativeList) {
+      if (!await NativeLists.activate(folder.nativeList)) {
+        toast(`WhatsApp list "${folder.nativeList}" not found. Showing saved leads instead`);
+      }
+    } else if (NativeLists.activeListName()) {
+      // Unlinked tabs filter locally, so WhatsApp must show its full list underneath.
+      await NativeLists.activateAll();
+    }
+    setTimeout(syncInlineFolders, 150);
+  }
+
+  // Rows WhatsApp shows under a linked list are members of that folder.
+  function importNativeMembers(chats, folder) {
+    const search = document.querySelector("#side [contenteditable='true'][role='textbox'], #side input[placeholder]");
+    if ((search?.value || search?.textContent || "").trim()) return;
+    let changed = false;
+    chats.forEach((chat) => {
+      const contact = chat.contact;
+      if (contact && WALeadFoldersClassifier.sameNativeList(contact.nativeSynced, folder.nativeList)) return;
+      const currentFolder = state.folders.find((item) => item.id === contact?.folderId);
+      if (currentFolder?.nativeList && currentFolder.id !== folder.id) return;
+      if (contact?.folderId === folder.id) {
+        contact.nativeSynced = folder.nativeList;
+      } else {
+        upsertContact(chat, {
+          folderId: folder.id,
+          nativeSynced: folder.nativeList,
+          sourceReason: `In WhatsApp list ${folder.nativeList}`,
+          ...(contact ? {} : { remindAt: null })
+        }, "whatsapp");
+      }
+      changed = true;
+    });
+    if (changed) void persistState();
+  }
+
+  function nativeListHeight(grid, rows) {
+    const declared = Number.parseFloat(grid.style.height);
+    if (declared) return declared;
+    return Math.max(0, ...rows.map((row) => -WALeadFoldersClassifier.rowOffset(row.style.transform, 0)
+      + (Number.parseFloat(row.style.height) || 72)));
+  }
+
+  // Brings the open chat's WhatsApp lists in line with its folder, once per change.
+  async function syncActiveChatNativeList() {
+    if (nativeSyncBusy || !state || root?.querySelector("dialog[open]")) return;
+    const chat = activeChat();
+    const contact = chat ? savedContact(chat) : null;
+    if (!contact) return;
+    const target = state.folders.find((folder) => folder.id === contact.folderId)?.nativeList || null;
+    const current = contact.nativeSynced || null;
+    if (target === current || WALeadFoldersClassifier.sameNativeList(target, current)) return;
+    const attempt = `${contact.id}|${current}|${target}`;
+    if (nativeSyncAttempts.has(attempt)) return;
+    nativeSyncAttempts.add(attempt);
+    nativeSyncBusy = true;
+    try {
+      const result = await NativeLists.setActiveChatLists({
+        add: target ? [target] : [],
+        remove: current ? [current] : [],
+        knownNames: knownNativeLists()
+      });
+      rememberNativeListNames(result.names);
+      if (!result.ok) {
+        toast(`WhatsApp list not updated (${result.reason}). Lead tools → Copy structure report`);
+        return;
+      }
+      contact.nativeSynced = target;
+      await saveState();
+      toast(target ? `Added to WhatsApp list ${target}` : `Removed from WhatsApp list ${current}`);
+    } finally {
+      nativeSyncBusy = false;
+    }
   }
 
   function syncTabOverflow(tabs) {
@@ -1552,7 +1743,7 @@
       folder,
       folderRows: groupedRows.get(folder.id) || [],
       kind: "folder"
-    })).filter(({ folder, folderRows }) => folderRows.length
+    })).filter(({ folder, folderRows }) => folderRows.length || folder.nativeList
       || Object.values(state.contacts).some((contact) => contact.folderId === folder.id));
     if (reviewRows.length) {
       tabGroups.push({
@@ -1584,11 +1775,22 @@
       };
     });
     const tabIds = new Set(tabDetails.map(({ folder }) => folder.id));
+    // Follow WhatsApp's own list chips: picking a linked list there selects its tab here.
+    const nativeActive = NativeLists.activeListName();
+    if (nativeActive !== lastNativeActive) {
+      lastNativeActive = nativeActive;
+      const followed = linkedFolder(nativeActive);
+      if (followed && tabIds.has(followed.id)) activeInlineTabId = followed.id;
+    }
     if (!tabIds.has(activeInlineTabId)) {
       const firstPopulated = tabDetails.find(({ folderRows, missing }) => folderRows.length || missing.length);
       activeInlineTabId = firstPopulated?.folder.id || tabDetails[0]?.folder.id || null;
     }
     const activeTab = tabDetails.find(({ folder }) => folder.id === activeInlineTabId) || null;
+    // WhatsApp has already filtered and laid out the list, so every member is reachable by scrolling.
+    const nativeMode = Boolean(activeTab?.kind === "folder" && activeTab.folder.nativeList
+      && WALeadFoldersClassifier.sameNativeList(nativeActive, activeTab.folder.nativeList));
+    if (nativeMode) importNativeMembers(listableChats, activeTab.folder);
     const assignments = WALeadFoldersClassifier.bulkAssignments(listableChats);
     const existingMissing = new Map([...grid.querySelectorAll(":scope > .walf-inline-missing")]
       .map((row) => [row.dataset.contactId, row]));
@@ -1639,6 +1841,7 @@
           if (activeInlineTabId === folder.id) return;
           activeInlineTabId = folder.id;
           syncInlineFolders();
+          void activateNativeForTab(folder.id);
           [...grid.querySelectorAll(":scope > .walf-inline-tabs [role='tab']")]
             .find((tab) => tab.dataset.folderId === activeInlineTabId)
             ?.scrollIntoView({ block: "nearest", inline: "nearest" });
@@ -1653,6 +1856,7 @@
               : (index + (key === "ArrowRight" || key === "ArrowDown" ? 1 : -1) + tabDetails.length) % tabDetails.length;
           activeInlineTabId = tabDetails[nextIndex].folder.id;
           syncInlineFolders();
+          void activateNativeForTab(activeInlineTabId);
           [...grid.querySelectorAll(":scope > .walf-inline-tabs [role='tab']")]
             .find((tab) => tab.dataset.folderId === activeInlineTabId)?.focus();
         });
@@ -1679,7 +1883,7 @@
       return placedY;
     };
 
-    prefix.forEach((row) => place(row, Number.parseFloat(row.style.height) || 44));
+    if (!nativeMode) prefix.forEach((row) => place(row, Number.parseFloat(row.style.height) || 44));
     let bulk = grid.querySelector(":scope > .walf-inline-bulk");
     if (assignments.length) {
       if (!bulk) {
@@ -1714,7 +1918,14 @@
     }
     if (tabs) tabs.dataset.baseY = String(place(tabs, INLINE_TAB_HEIGHT));
 
-    const activeRows = new Set(activeTab?.folderRows || []);
+    if (nativeMode) {
+      const stripHeight = y;
+      const nativeHeight = nativeListHeight(grid, rows);
+      [...prefix, ...listableChats.map(({ row }) => row)]
+        .forEach((row) => { row.style.translate = `0 ${stripHeight}px`; });
+      y = stripHeight + nativeHeight;
+    }
+    const activeRows = new Set(nativeMode ? listableChats : activeTab?.folderRows || []);
     listableChats.forEach((chat) => {
       if (!activeRows.has(chat)) chat.row.classList.add("walf-inline-hidden");
     });
@@ -1723,8 +1934,12 @@
     let section = grid.querySelector(":scope > .walf-inline-section");
     let sectionPlaced = false;
     if (activeTab) {
-      const { folderRows, missing, kind } = activeTab;
-      folderRows.forEach(({ row }) => place(row, Number.parseFloat(row.style.height) || 76));
+      const { folderRows, kind } = activeTab;
+      // In WhatsApp-list mode only leads not yet added to that list need surfacing.
+      const missing = nativeMode
+        ? activeTab.missing.filter((contact) => !WALeadFoldersClassifier.sameNativeList(contact.nativeSynced, activeTab.folder.nativeList))
+        : activeTab.missing;
+      if (!nativeMode) folderRows.forEach(({ row }) => place(row, Number.parseFloat(row.style.height) || 76));
       if (missing.length) {
         if (!section) {
           section = document.createElement("div");
@@ -1733,9 +1948,12 @@
           section.innerHTML = `<span></span><b></b>`;
           grid.append(section);
         }
-        section.querySelector("span").textContent = folderRows.length ? "Not in recent chats" : "Saved leads";
+        section.querySelector("span").textContent = nativeMode ? "Not in the WhatsApp list yet"
+          : folderRows.length ? "Not in recent chats" : "Saved leads";
         section.querySelector("b").textContent = String(missing.length);
-        section.title = "Saved in this group but not loaded in WhatsApp's chat list. Click one to open it.";
+        section.title = nativeMode
+          ? "Open a lead to add it to this WhatsApp list automatically."
+          : "Saved in this group but not loaded in WhatsApp's chat list. Click one to open it.";
         place(section, 40);
         sectionPlaced = true;
         missing.forEach((contact) => {
@@ -1762,7 +1980,7 @@
           row.querySelector("button").onclick = () => openSavedContact(contact);
           place(row, INLINE_MISSING_ROW_HEIGHT);
         });
-      } else if (!folderRows.length) {
+      } else if (!nativeMode && !folderRows.length) {
         if (!empty) {
           empty = document.createElement("div");
           empty.className = "walf-inline-empty";
@@ -1980,6 +2198,8 @@
       syncNativeLeadTools();
       syncContactInfoCopy();
       syncQuickReplyButton();
+      rememberNativeListNames(NativeLists.listNames());
+      void syncActiveChatNativeList();
       launcher.querySelector(".walf-launcher-count").textContent = Object.keys(state.contacts).length;
     } catch (error) {
       if (!handleExtensionContextError(error)) console.error("WA Lead Folders sync failed", error);

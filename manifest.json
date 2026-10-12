@@ -1,7 +1,7 @@
 {
   "manifest_version": 3,
   "name": "WA Lead Folders",
-  "version": "0.18.16",
+  "version": "0.19.0",
   "description": "Organise WhatsApp leads and match them to Meta Business Inbox conversations.",
   "icons": {
     "16": "icons/icon-16.png",
@@ -27,7 +27,7 @@
   "content_scripts": [
     {
       "matches": ["https://web.whatsapp.com/*"],
-      "js": ["classifier.js", "content.js"],
+      "js": ["classifier.js", "native-lists.js", "content.js"],
       "css": ["styles.css"],
       "run_at": "document_idle"
     },
