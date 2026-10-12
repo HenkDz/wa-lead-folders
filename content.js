@@ -506,19 +506,53 @@
     }
   }
 
-  // Leaves WhatsApp's chat list unfiltered again after we used its search to open a lead.
-  function clearChatSearch() {
-    const search = chatSearchBox();
-    if (!search || !chatSearchText()) return;
-    const cancel = [...document.querySelectorAll("#side button, #side [role='button']")]
-      .find((button) => /cancel search|clear search/i.test(button.getAttribute("aria-label") || ""));
-    if (cancel) cancel.click();
-    else setSearchQuery(search, "");
-    search.blur();
+  // WhatsApp rows and buttons often react to the pointer sequence rather than a bare click().
+  function pressElement(element) {
+    const options = { bubbles: true, cancelable: true, view: window };
+    element.dispatchEvent(new PointerEvent("pointerdown", options));
+    element.dispatchEvent(new MouseEvent("mousedown", options));
+    element.dispatchEvent(new PointerEvent("pointerup", options));
+    element.dispatchEvent(new MouseEvent("mouseup", options));
+    element.click();
+  }
+
+  function pressKey(element, key) {
+    ["keydown", "keyup"].forEach((type) => element.dispatchEvent(new KeyboardEvent(type, {
+      key, code: key, keyCode: key === "Enter" ? 13 : 27, which: key === "Enter" ? 13 : 27, bubbles: true, cancelable: true
+    })));
+  }
+
+  // The ✕ inside the search field: icon-only and placed after the text box.
+  function searchClearButton(search) {
+    let node = search.parentElement;
+    for (let depth = 0; node && depth < 4; depth += 1, node = node.parentElement) {
+      const buttons = [...node.querySelectorAll("button, [role='button']")].filter((button) => !button.contains(search)
+        && button.getClientRects().length && !button.closest("[class*='walf-']"));
+      const labelled = buttons.find((button) => /cancel|clear|close/i
+        .test(`${button.getAttribute("aria-label") || ""} ${button.getAttribute("title") || ""}`));
+      if (labelled) return labelled;
+      const trailingIcon = buttons.filter((button) => !button.textContent.trim()
+        && (search.compareDocumentPosition(button) & Node.DOCUMENT_POSITION_FOLLOWING)).pop();
+      if (trailingIcon) return trailingIcon;
+    }
+    return null;
+  }
+
+  // Empties WhatsApp's search and waits until it really is empty, so the next query starts fresh.
+  async function clearChatSearch() {
+    if (!chatSearchBox() || !chatSearchText()) return true;
+    const cancel = searchClearButton(chatSearchBox());
+    if (cancel) pressElement(cancel);
+    if (await waitForValue(() => !chatSearchText(), 800)) return true;
+    if (chatSearchBox()) setSearchQuery(chatSearchBox(), "");
+    if (await waitForValue(() => !chatSearchText(), 600)) return true;
+    if (chatSearchBox()) pressKey(chatSearchBox(), "Escape");
+    return Boolean(await waitForValue(() => !chatSearchText(), 600));
   }
 
   function searchResultRow(contact, directPhone) {
-    const titles = [...document.querySelectorAll("#pane-side [data-testid='cell-frame-title'] span[title]")];
+    const titles = [...document.querySelectorAll("#pane-side span[title]")]
+      .filter((title) => !title.closest("[class*='walf-']"));
     const phoneMatch = directPhone && titles.find((title) => (
       WALeadFoldersClassifier.normalizedPhone(title.getAttribute("title")) === directPhone
     ));
@@ -528,10 +562,15 @@
         === normalizedContactName)
       : [];
     const exact = phoneMatch || (nameMatches.length === 1 ? nameMatches[0] : null);
-    return exact?.closest("[role='row']") || null;
+    return exact?.closest("[role='row'], [role='listitem'], [role='gridcell'], [role='button']") || null;
   }
 
-  // Resolves true once the lead's row was clicked. `reload: false` never leaves the page.
+  const isOpenLead = (contact) => {
+    const chat = activeChat();
+    return Boolean(chat && savedContact(chat)?.id === contact.id);
+  };
+
+  // Resolves true once the lead's chat is open. `reload: false` never leaves the page.
   async function openSavedContact(contact, { reload = true } = {}) {
     const directPhone = contactPhone(contact);
     const search = chatSearchBox();
@@ -550,16 +589,27 @@
       await NativeLists.activateAll();
       await sleep(200);
     }
+    if (isOpenLead(contact)) return true;
+    let clicked = false;
     for (const query of searchQueries) {
-      setSearchQuery(search, query);
-      const row = await waitForValue(() => searchResultRow(contact, directPhone), 2000);
-      if (row) {
-        row.click();
-        setTimeout(clearChatSearch, 400);
-        return true;
+      await clearChatSearch();
+      setSearchQuery(chatSearchBox() || search, query);
+      const row = await waitForValue(() => searchResultRow(contact, directPhone), 3000);
+      if (!row) continue;
+      clicked = true;
+      pressElement(row.querySelector("[data-testid='cell-frame-container']") || row);
+      let opened = await waitForValue(() => isOpenLead(contact), 2500);
+      if (!opened && chatSearchBox()) {
+        // Enter in WhatsApp's search opens the top result.
+        pressKey(chatSearchBox(), "Enter");
+        opened = await waitForValue(() => isOpenLead(contact), 2000);
       }
+      await clearChatSearch();
+      if (opened) return true;
     }
-    clearChatSearch();
+    await clearChatSearch();
+    // A row was clicked but couldn't be confirmed: never reload over a chat that may be open.
+    if (clicked) return false;
     return fallbackToDirect();
   }
 

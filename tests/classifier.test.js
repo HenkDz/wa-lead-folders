@@ -362,7 +362,9 @@ test("keeps off-list contacts visible in their active group tab", () => {
   const source = readFileSync(join(__dirname, "..", "content.js"), "utf8");
   const styles = readFileSync(join(__dirname, "..", "styles.css"), "utf8");
   assert.match(source, /async function openSavedContact\(contact, \{ reload = true \} = \{\}\)/);
-  assert.match(source, /setTimeout\(clearChatSearch, 400\)/);
+  assert.match(source, /await clearChatSearch\(\);\s+setSearchQuery\(chatSearchBox\(\) \|\| search, query\)/);
+  assert.match(source, /waitForValue\(\(\) => isOpenLead\(contact\), 2500\)/);
+  assert.match(source, /if \(clicked\) return false;/);
   assert.match(source, /walf-inline-missing/);
   assert.match(source, /whatsAppWebUrl\(directPhone\)/);
   assert.match(source, /const searchQueries = \[\.\.\.new Set\(\[directPhone, contact\.name\]/);
