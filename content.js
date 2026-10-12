@@ -35,6 +35,7 @@
   let lastNativeActive;
   let nativeSyncBusy = false;
   const nativeSyncAttempts = new Set();
+  let batchSync = null;
 
   function storageApiAvailable() {
     const storage = typeof chrome !== "undefined" ? chrome.storage?.local : null;
@@ -467,72 +468,99 @@
         ? WALeadFoldersClassifier.normalizedPhone(contact.id.slice(6)) : null);
   }
 
-  function openSavedContact(contact) {
+  const sleep = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
+
+  async function waitForValue(read, timeout) {
+    const started = Date.now();
+    for (;;) {
+      const value = read();
+      if (value) return value;
+      if (Date.now() - started > timeout) return null;
+      await sleep(100);
+    }
+  }
+
+  const chatSearchBox = () => document.querySelector("#side [contenteditable='true'][role='textbox'], #side input[placeholder]");
+  const chatSearchText = () => {
+    const search = chatSearchBox();
+    return (search?.value || search?.textContent || "").trim();
+  };
+
+  function setSearchQuery(search, query) {
+    search.focus();
+    if (search instanceof HTMLInputElement) {
+      const setter = Object.getOwnPropertyDescriptor(HTMLInputElement.prototype, "value")?.set;
+      setter?.call(search, query);
+      search.dispatchEvent(new Event("input", { bubbles: true }));
+      return;
+    }
+    const range = document.createRange();
+    range.selectNodeContents(search);
+    const selection = window.getSelection();
+    selection.removeAllRanges();
+    selection.addRange(range);
+    const applied = query ? document.execCommand("insertText", false, query) : document.execCommand("delete");
+    if (!applied) {
+      search.textContent = query;
+      search.dispatchEvent(new InputEvent("input", { bubbles: true, data: query }));
+    }
+  }
+
+  // Leaves WhatsApp's chat list unfiltered again after we used its search to open a lead.
+  function clearChatSearch() {
+    const search = chatSearchBox();
+    if (!search || !chatSearchText()) return;
+    const cancel = [...document.querySelectorAll("#side button, #side [role='button']")]
+      .find((button) => /cancel search|clear search/i.test(button.getAttribute("aria-label") || ""));
+    if (cancel) cancel.click();
+    else setSearchQuery(search, "");
+    search.blur();
+  }
+
+  function searchResultRow(contact, directPhone) {
+    const titles = [...document.querySelectorAll("#pane-side [data-testid='cell-frame-title'] span[title]")];
+    const phoneMatch = directPhone && titles.find((title) => (
+      WALeadFoldersClassifier.normalizedPhone(title.getAttribute("title")) === directPhone
+    ));
+    const normalizedContactName = WALeadFoldersClassifier.normalizedName(contact.name);
+    const nameMatches = normalizedContactName
+      ? titles.filter((title) => WALeadFoldersClassifier.normalizedName(title.getAttribute("title"))
+        === normalizedContactName)
+      : [];
+    const exact = phoneMatch || (nameMatches.length === 1 ? nameMatches[0] : null);
+    return exact?.closest("[role='row']") || null;
+  }
+
+  // Resolves true once the lead's row was clicked. `reload: false` never leaves the page.
+  async function openSavedContact(contact, { reload = true } = {}) {
     const directPhone = contactPhone(contact);
-    const search = document.querySelector("#side [contenteditable='true'][role='textbox'], #side input[placeholder]");
+    const search = chatSearchBox();
     const searchQueries = [...new Set([directPhone, contact.name].filter(Boolean))];
     const fallbackToDirect = () => {
-      if (!directPhone) return toast(`No WhatsApp result for ${contact.name}`);
-      location.assign(WALeadFoldersClassifier.whatsAppWebUrl(directPhone));
-    };
-    if (!search) return fallbackToDirect();
-
-    const setSearchQuery = (query) => {
-      search.focus();
-      if (search instanceof HTMLInputElement) {
-        const setter = Object.getOwnPropertyDescriptor(HTMLInputElement.prototype, "value")?.set;
-        setter?.call(search, query);
-        search.dispatchEvent(new Event("input", { bubbles: true }));
-      } else {
-        const range = document.createRange();
-        range.selectNodeContents(search);
-        const selection = window.getSelection();
-        selection.removeAllRanges();
-        selection.addRange(range);
-        if (!document.execCommand("insertText", false, query)) {
-          search.textContent = query;
-          search.dispatchEvent(new InputEvent("input", { bubbles: true, data: query }));
-        }
+      if (!directPhone || !reload) {
+        if (reload) toast(`No WhatsApp result for ${contact.name}`);
+        return false;
       }
+      location.assign(WALeadFoldersClassifier.whatsAppWebUrl(directPhone));
+      return true;
     };
-
-    let queryIndex = 0;
-    let attempts = 0;
-    const openResult = () => {
-      const titles = [...document.querySelectorAll(
-        "#pane-side [data-testid='cell-frame-title'] span[title]"
-      )];
-      const phoneMatch = directPhone && titles.find((title) => (
-        WALeadFoldersClassifier.normalizedPhone(title.getAttribute("title")) === directPhone
-      ));
-      const normalizedContactName = WALeadFoldersClassifier.normalizedName(contact.name);
-      const nameMatches = normalizedContactName
-        ? titles.filter((title) => WALeadFoldersClassifier.normalizedName(title.getAttribute("title"))
-          === normalizedContactName)
-        : [];
-      const exact = phoneMatch || (nameMatches.length === 1 ? nameMatches[0] : null);
-      const row = exact?.closest("[role='row']");
+    if (!search || !searchQueries.length) return fallbackToDirect();
+    // A WhatsApp list filter could hide the lead from search results.
+    if (NativeLists.activeListName()) {
+      await NativeLists.activateAll();
+      await sleep(200);
+    }
+    for (const query of searchQueries) {
+      setSearchQuery(search, query);
+      const row = await waitForValue(() => searchResultRow(contact, directPhone), 2000);
       if (row) {
         row.click();
-        return;
+        setTimeout(clearChatSearch, 400);
+        return true;
       }
-      if (attempts++ < 20) {
-        setTimeout(openResult, 100);
-        return;
-      }
-      if (queryIndex < searchQueries.length - 1) {
-        queryIndex += 1;
-        attempts = 0;
-        setSearchQuery(searchQueries[queryIndex]);
-        setTimeout(openResult, 100);
-        return;
-      }
-      fallbackToDirect();
-    };
-
-    if (!searchQueries.length) return fallbackToDirect();
-    setSearchQuery(searchQueries[0]);
-    setTimeout(openResult, 100);
+    }
+    clearChatSearch();
+    return fallbackToDirect();
   }
 
   async function syncWhatsAppIndex() {
@@ -1611,17 +1639,17 @@
       + (Number.parseFloat(row.style.height) || 72)));
   }
 
-  // Brings the open chat's WhatsApp lists in line with its folder, once per change.
-  async function syncActiveChatNativeList() {
-    if (nativeSyncBusy || !state || root?.querySelector("dialog[open]")) return;
+  // Brings the open chat's WhatsApp lists in line with its folder, once per change unless forced.
+  async function syncActiveChatNativeList({ force = false } = {}) {
+    if (nativeSyncBusy || !state || root?.querySelector("dialog[open]")) return "busy";
     const chat = activeChat();
     const contact = chat ? savedContact(chat) : null;
-    if (!contact) return;
+    if (!contact) return "no-lead";
     const target = state.folders.find((folder) => folder.id === contact.folderId)?.nativeList || null;
     const current = contact.nativeSynced || null;
-    if (target === current || WALeadFoldersClassifier.sameNativeList(target, current)) return;
+    if (target === current || WALeadFoldersClassifier.sameNativeList(target, current)) return "synced";
     const attempt = `${contact.id}|${current}|${target}`;
-    if (nativeSyncAttempts.has(attempt)) return;
+    if (nativeSyncAttempts.has(attempt) && !force) return "failed";
     nativeSyncAttempts.add(attempt);
     nativeSyncBusy = true;
     try {
@@ -1632,15 +1660,90 @@
       });
       rememberNativeListNames(result.names);
       if (!result.ok) {
-        toast(`WhatsApp list not updated (${result.reason}). Lead tools → Copy structure report`);
-        return;
+        if (!batchSync) toast(`WhatsApp list not updated (${result.reason}). Lead tools → Copy structure report`);
+        else batchSync.lastError = result.reason;
+        return "failed";
       }
       contact.nativeSynced = target;
       await saveState();
-      toast(target ? `Added to WhatsApp list ${target}` : `Removed from WhatsApp list ${current}`);
+      if (!batchSync) toast(target ? `Added to WhatsApp list ${target}` : `Removed from WhatsApp list ${current}`);
+      return "synced";
     } finally {
       nativeSyncBusy = false;
     }
+  }
+
+  const pendingNativeLeads = (folder) => Object.values(state.contacts).filter((contact) => contact.folderId === folder.id
+    && !WALeadFoldersClassifier.sameNativeList(contact.nativeSynced, folder.nativeList));
+
+  async function openAndSyncLead(contactId, folder) {
+    const contact = state.contacts[contactId];
+    if (!contact || !await openSavedContact(contact, { reload: false })) return false;
+    const opened = await waitForValue(() => {
+      const chat = activeChat();
+      return chat && savedContact(chat)?.id === contactId;
+    }, 6000);
+    if (!opened) return false;
+    for (let tries = 0; tries < 30; tries += 1) {
+      if (WALeadFoldersClassifier.sameNativeList(state.contacts[contactId]?.nativeSynced, folder.nativeList)) return true;
+      if ((await syncActiveChatNativeList({ force: true })) === "failed") return false;
+      await sleep(250);
+    }
+    return false;
+  }
+
+  // Opens every lead in the folder that isn't in its WhatsApp list yet, one at a time.
+  async function syncFolderToNativeList(folder) {
+    if (batchSync || !folder?.nativeList) return;
+    const queue = pendingNativeLeads(folder).map((contact) => contact.id);
+    if (!queue.length) return toast(`Every ${folder.name} lead is already in ${folder.nativeList}`);
+    batchSync = { folder, total: queue.length, done: 0, added: 0, failed: [], stopped: false, lastError: null };
+    renderBatchBar();
+    try {
+      for (const id of queue) {
+        if (batchSync.stopped) break;
+        const name = state.contacts[id]?.name || id;
+        if (await openAndSyncLead(id, folder)) batchSync.added += 1;
+        else batchSync.failed.push(name);
+        batchSync.done += 1;
+        renderBatchBar();
+        // Leave WhatsApp a breath between chats instead of hammering it.
+        await sleep(700);
+      }
+    } finally {
+      const { added, failed, stopped, lastError } = batchSync;
+      batchSync = null;
+      renderBatchBar();
+      clearChatSearch();
+      activeInlineTabId = folder.id;
+      await activateNativeForTab(folder.id);
+      toast(`${stopped ? "Stopped. " : ""}${added} added to ${folder.nativeList}${failed.length
+        ? ` · ${failed.length} couldn't be opened${lastError ? ` (${lastError})` : ""}` : ""}`);
+      if (failed.length) console.info("WA Lead Folders: leads not synced", failed);
+    }
+  }
+
+  function renderBatchBar() {
+    let bar = root.querySelector(".walf-batch");
+    if (!batchSync) {
+      bar?.remove();
+      return;
+    }
+    if (!bar) {
+      bar = document.createElement("div");
+      bar.className = "walf-batch";
+      bar.setAttribute("role", "status");
+      bar.innerHTML = `<div><b></b><span></span></div><progress max="1" value="0"></progress><button type="button">Stop</button>`;
+      bar.querySelector("button").addEventListener("click", () => {
+        if (batchSync) batchSync.stopped = true;
+      });
+      root.append(bar);
+    }
+    bar.querySelector("b").textContent = `Adding to ${batchSync.folder.nativeList}`;
+    bar.querySelector("span").textContent = `${batchSync.done} of ${batchSync.total}${batchSync.failed.length
+      ? ` · ${batchSync.failed.length} skipped` : ""}`;
+    bar.querySelector("progress").max = batchSync.total;
+    bar.querySelector("progress").value = batchSync.done;
   }
 
   function syncTabOverflow(tabs) {
@@ -1945,7 +2048,7 @@
           section = document.createElement("div");
           section.className = "walf-inline-section";
           section.setAttribute("role", "row");
-          section.innerHTML = `<span></span><b></b>`;
+          section.innerHTML = `<span></span><b></b><button type="button" class="walf-inline-section-action"></button>`;
           grid.append(section);
         }
         section.querySelector("span").textContent = nativeMode ? "Not in the WhatsApp list yet"
@@ -1954,6 +2057,14 @@
         section.title = nativeMode
           ? "Open a lead to add it to this WhatsApp list automatically."
           : "Saved in this group but not loaded in WhatsApp's chat list. Click one to open it.";
+        const action = section.querySelector("button");
+        const sectionFolder = activeTab.kind === "folder" ? activeTab.folder : null;
+        action.hidden = !sectionFolder || Boolean(batchSync);
+        action.textContent = sectionFolder?.nativeList ? `Add all to ${sectionFolder.nativeList}` : "Link a WhatsApp list";
+        action.onclick = () => {
+          if (sectionFolder?.nativeList) void syncFolderToNativeList(sectionFolder);
+          else openPanel();
+        };
         place(section, 40);
         sectionPlaced = true;
         missing.forEach((contact) => {
@@ -2199,7 +2310,7 @@
       syncContactInfoCopy();
       syncQuickReplyButton();
       rememberNativeListNames(NativeLists.listNames());
-      void syncActiveChatNativeList();
+      if (!batchSync) void syncActiveChatNativeList();
       launcher.querySelector(".walf-launcher-count").textContent = Object.keys(state.contacts).length;
     } catch (error) {
       if (!handleExtensionContextError(error)) console.error("WA Lead Folders sync failed", error);

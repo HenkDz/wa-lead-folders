@@ -361,12 +361,13 @@ test("automates new follow-ups and keeps group tabs available while scrolling", 
 test("keeps off-list contacts visible in their active group tab", () => {
   const source = readFileSync(join(__dirname, "..", "content.js"), "utf8");
   const styles = readFileSync(join(__dirname, "..", "styles.css"), "utf8");
-  assert.match(source, /function openSavedContact\(contact\)/);
+  assert.match(source, /async function openSavedContact\(contact, \{ reload = true \} = \{\}\)/);
+  assert.match(source, /setTimeout\(clearChatSearch, 400\)/);
   assert.match(source, /walf-inline-missing/);
   assert.match(source, /whatsAppWebUrl\(directPhone\)/);
   assert.match(source, /const searchQueries = \[\.\.\.new Set\(\[directPhone, contact\.name\]/);
   assert.match(source, /const fallbackToDirect = \(\) =>/);
-  assert.match(source, /setSearchQuery\(searchQueries\[0\]\)/);
+  assert.match(source, /for \(const query of searchQueries\)/);
   assert.match(source, /const phoneMatch/);
   assert.doesNotMatch(source, /const result = exact \|\| \(titles\.length === 1/);
   assert.match(source, /Saved lead/);
@@ -600,4 +601,7 @@ test("drives WhatsApp lists through visible UI and keeps a structure report", ()
   assert.match(source, /Not in the WhatsApp list yet/);
   assert.match(source, /state\.chatBindings\[`jid:\$\{chat\.jid\}`\]/);
   assert.match(popup, /\.\.\.folder,\s+id: folder\.id/);
+  assert.match(source, /async function syncFolderToNativeList\(folder\)/);
+  assert.match(source, /openSavedContact\(contact, \{ reload: false \}\)/);
+  assert.match(source, /if \(!batchSync\) void syncActiveChatNativeList\(\)/);
 });

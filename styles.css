@@ -825,6 +825,53 @@
   opacity: .7;
 }
 
+#pane-side .walf-inline-section-action {
+  margin-inline-start: auto;
+  padding: 4px 10px;
+  border: 0;
+  border-radius: 999px;
+  color: #21c063;
+  background: rgba(33, 192, 99, .1);
+  font: 600 12px/1 -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+  letter-spacing: normal;
+  text-transform: none;
+  cursor: pointer;
+}
+
+#pane-side .walf-inline-section-action:hover { background: rgba(33, 192, 99, .18); }
+#pane-side .walf-inline-section-action[hidden] { display: none; }
+
+#wa-lead-folders .walf-batch {
+  position: fixed;
+  z-index: 10000;
+  left: calc(var(--walf-left) + 14px);
+  bottom: 64px;
+  width: calc(var(--walf-width) - 28px);
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 8px 12px;
+  align-items: center;
+  box-sizing: border-box;
+  padding: 12px 14px;
+  border-radius: 12px;
+  color: white;
+  background: #17231f;
+  box-shadow: 0 8px 25px rgba(0, 0, 0, .35);
+  font-size: 12px;
+}
+
+#wa-lead-folders .walf-batch div { display: grid; gap: 3px; min-width: 0; }
+#wa-lead-folders .walf-batch span { color: #aebac1; }
+#wa-lead-folders .walf-batch progress { grid-column: 1 / -1; grid-row: 2; width: 100%; height: 4px; accent-color: #21c063; }
+#wa-lead-folders .walf-batch button {
+  padding: 6px 12px;
+  border: 1px solid rgba(255, 255, 255, .2);
+  border-radius: 999px;
+  color: white;
+  background: transparent;
+  cursor: pointer;
+}
+
 /* Off-list leads mirror native rows (avatar size, type scale) so the group reads as one list. */
 #pane-side .walf-inline-missing {
   position: absolute;
