@@ -1,0 +1,93 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>WA Lead Desk</title>
+  <link rel="stylesheet" href="popup.css">
+</head>
+<body>
+  <div class="app-shell">
+    <header class="hero">
+      <div class="brand-mark" aria-hidden="true">
+        <svg viewBox="0 0 32 32"><path d="M16 3.5a12.5 12.5 0 0 0-10.7 19L3.8 28.5l6.2-1.6A12.5 12.5 0 1 0 16 3.5Z"/><path d="M11.2 10.3c.4-.4.8-.4 1.1.1l1.2 2c.2.4.1.7-.2 1l-.7.6c.7 1.3 1.7 2.3 3 3l.6-.7c.3-.3.6-.4 1-.2l2 1.2c.5.3.5.7.1 1.1l-.7.7c-.6.6-1.5.8-2.3.5a10.2 10.2 0 0 1-5.9-5.9c-.3-.8-.1-1.7.5-2.3Z"/></svg>
+      </div>
+      <div class="hero-copy">
+        <div class="eyebrow">WA LEAD DESK</div>
+        <h1>One inbox. Every lead.</h1>
+        <p>Quick contact actions and focused follow-up control.</p>
+      </div>
+      <span class="version-badge">v0.18.16</span>
+    </header>
+
+    <nav class="tabs" role="tablist" aria-label="Extension sections">
+      <button type="button" class="tab is-active" data-tab="quick" role="tab" aria-selected="true">Quick contact</button>
+      <button type="button" class="tab" data-tab="desk" role="tab" aria-selected="false">Lead desk</button>
+    </nav>
+
+    <main class="content">
+      <section id="quick-panel" class="tab-panel" role="tabpanel">
+        <div class="section-intro">
+          <span class="section-kicker">FAST LANE</span>
+          <h2>Message or call from anywhere</h2>
+          <p>Select a number on any page and right-click it. Your chosen target is remembered.</p>
+        </div>
+
+        <section class="card accent-card">
+          <div class="card-heading"><span class="step">01</span><div><h3>Open target</h3><p>Where should a default action go?</p></div></div>
+          <div class="segmented" id="target-segmented">
+            <button type="button" class="seg-btn" data-target="app"><span class="seg-icon">↗</span>App</button>
+            <button type="button" class="seg-btn" data-target="web"><span class="seg-icon">▣</span>Web</button>
+            <button type="button" class="seg-btn" data-target="ask"><span class="seg-icon">?</span>Ask</button>
+          </div>
+          <p class="hint">Applies to right-click defaults and keyboard shortcut <kbd>Alt</kbd> <kbd>W</kbd>.</p>
+        </section>
+
+        <section class="card">
+          <div class="card-heading"><span class="step">02</span><div><h3>Default country</h3><p>Fallback for local numbers without a country code.</p></div></div>
+          <div id="current-default-box"></div>
+          <div class="search-wrapper">
+            <svg class="search-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="m21 21-6-6m2-5a7 7 0 1 1-14 0 7 7 0 0 1 14 0Z"/></svg>
+            <input type="search" class="search-input" id="search" placeholder="Search country code…" autocomplete="off">
+          </div>
+          <div class="countries-list" id="countries-list"></div>
+        </section>
+
+        <section class="card compact-card">
+          <div class="card-heading"><span class="step">03</span><div><h3>Safety &amp; scope</h3><p>Prevent accidental repeated opens.</p></div></div>
+          <div class="row"><div><div class="row-label">Re-open cooldown</div><div class="row-sub">0 disables the warning</div></div><div class="number-field"><input type="number" id="cooldown-minutes" min="0" max="1440" step="1" value="15"><span>min</span></div></div>
+          <div class="row"><div><div class="row-label">Page highlighting</div><div class="row-sub">Keep automatic number highlights enabled</div></div><label class="toggle"><input type="checkbox" id="detection-enabled" checked><span class="toggle-slider"></span></label></div>
+        </section>
+
+        <details class="card disclosure">
+          <summary><span><strong>Domain scope</strong><small>Choose where page highlighting appears</small></span><span class="chevron">⌄</span></summary>
+          <div class="disclosure-body">
+            <div class="segmented two-up" id="domain-mode-segmented"><button type="button" class="seg-btn" data-mode="all">All sites</button><button type="button" class="seg-btn" data-mode="allowlist">Allowlist only</button></div>
+            <p class="hint" id="domain-mode-hint">Highlight on every site except WhatsApp.</p>
+            <div id="allowlist-panel" class="hidden-block">
+              <button type="button" class="secondary-btn" id="add-current-site">+ Add current tab’s site</button>
+              <div class="domain-add"><input type="text" id="domain-input" placeholder="example.com" autocomplete="off" spellcheck="false"><button type="button" id="domain-add-btn">Add</button></div>
+              <div class="domain-list" id="domain-list"></div>
+            </div>
+            <div class="warning-note">WhatsApp and wa.me are always excluded so your chat stays clean.</div>
+          </div>
+        </details>
+      </section>
+
+      <section id="desk-panel" class="tab-panel" role="tabpanel" hidden>
+        <div class="section-intro desk-intro"><span class="section-kicker">OPERATIONS</span><h2>Your lead desk</h2><p>See your pipeline at a glance, then jump straight into WhatsApp.</p></div>
+        <div class="desk-stats" id="desk-stats"></div>
+        <section class="card desk-controls">
+          <div class="control-line"><div><h3>Inline grouping</h3><p>Keep assigned chats organized inside WhatsApp.</p></div><button type="button" id="grouping-toggle" class="switch-button" aria-pressed="true">On</button></div>
+          <div class="control-line"><div><h3>Automatic follow-up</h3><p>Schedule a reminder after assigning a lead.</p></div><div class="number-field"><input type="number" id="auto-followup-hours" min="0" max="720" step="1"><span>hours</span></div></div>
+        </section>
+        <section class="card folder-card"><div class="card-heading folder-heading"><div><h3>Folders</h3><p>Reorder, hide, or delete. Full edit tools stay in WhatsApp.</p></div><button type="button" class="ghost-btn" id="open-lead-desk">Open in WhatsApp ↗</button></div><div id="desk-folders" class="desk-folders"></div></section>
+      </section>
+    </main>
+
+    <div id="popup-toast" class="popup-toast" role="status" aria-live="polite"></div>
+    <footer class="footer"><span>Right-click a phone number anywhere</span><span class="footer-dot">•</span><span>Message · Call · Copy</span></footer>
+  </div>
+  <script src="popup.js"></script>
+</body>
+</html>

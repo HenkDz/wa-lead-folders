@@ -1,0 +1,277 @@
+/* WhatsApp Quick Contact â€” page highlights & bubble UI */
+
+.wa-qc-phone {
+  background: linear-gradient(180deg, rgba(37, 211, 102, 0.22), rgba(37, 211, 102, 0.12)) !important;
+  border-bottom: 2px solid #25d366 !important;
+  border-radius: 3px;
+  cursor: pointer !important;
+  padding: 0 2px;
+  box-decoration-break: clone;
+  -webkit-box-decoration-break: clone;
+  transition: background 0.15s ease, box-shadow 0.15s ease;
+  text-decoration: none !important;
+  color: inherit;
+  position: relative;
+  z-index: 1;
+  pointer-events: auto !important;
+}
+
+.wa-qc-phone:hover,
+.wa-qc-phone.wa-qc-active {
+  background: rgba(37, 211, 102, 0.35);
+  box-shadow: 0 0 0 3px rgba(37, 211, 102, 0.2);
+}
+
+/* Floating action bubble â€” full-viewport layer so fixed coords match getBoundingClientRect */
+#wa-qc-bubble-root {
+  position: fixed;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  z-index: 2147483646;
+  pointer-events: none;
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, sans-serif;
+  overflow: visible;
+}
+
+.wa-qc-bubble {
+  position: fixed;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+  pointer-events: auto;
+  /* Anchored via JS: left/top + transform */
+  will-change: transform, opacity;
+}
+
+.wa-qc-bubble.wa-qc-bubble-below {
+  flex-direction: column-reverse;
+}
+
+.wa-qc-bubble-stack {
+  display: flex;
+  flex-direction: column;
+  align-items: stretch;
+  gap: 6px;
+  min-width: 168px;
+}
+
+.wa-qc-bubble-btn {
+  appearance: none;
+  border: none;
+  border-radius: 999px;
+  padding: 10px 16px;
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.18);
+  opacity: 0;
+  transform: translateY(12px) scale(0.92);
+  transition:
+    opacity 0.28s cubic-bezier(0.22, 1, 0.36, 1),
+    transform 0.28s cubic-bezier(0.22, 1, 0.36, 1),
+    background 0.15s ease;
+  white-space: nowrap;
+}
+
+.wa-qc-bubble.wa-qc-open .wa-qc-bubble-btn {
+  opacity: 1;
+  transform: translateY(0) scale(1);
+}
+
+.wa-qc-bubble.wa-qc-open .wa-qc-bubble-btn:nth-child(1) {
+  transition-delay: 0.02s;
+}
+.wa-qc-bubble.wa-qc-open .wa-qc-bubble-btn:nth-child(2) {
+  transition-delay: 0.07s;
+}
+.wa-qc-bubble.wa-qc-open .wa-qc-bubble-btn:nth-child(3) {
+  transition-delay: 0.12s;
+}
+.wa-qc-bubble.wa-qc-open .wa-qc-bubble-btn:nth-child(4) {
+  transition-delay: 0.17s;
+}
+.wa-qc-bubble.wa-qc-open .wa-qc-bubble-btn:nth-child(5) {
+  transition-delay: 0.22s;
+}
+
+.wa-qc-bubble-btn-primary {
+  background: #25d366;
+  color: #fff;
+}
+.wa-qc-bubble-btn-primary:hover {
+  background: #1da851;
+}
+
+.wa-qc-bubble-btn-secondary {
+  background: #fff;
+  color: #128c7e;
+  border: 2px solid #25d366;
+}
+.wa-qc-bubble-btn-secondary:hover {
+  background: #f0fdf4;
+}
+
+.wa-qc-bubble-btn-ghost {
+  background: #111827;
+  color: #fff;
+}
+.wa-qc-bubble-btn-ghost:hover {
+  background: #1f2937;
+}
+
+.wa-qc-bubble-btn-copy {
+  background: #fff;
+  color: #374151;
+  border: 2px solid #e5e7eb;
+}
+.wa-qc-bubble-btn-copy:hover {
+  background: #f9fafb;
+  border-color: #d1d5db;
+  color: #111827;
+}
+
+.wa-qc-bubble-btn-warn {
+  background: #f59e0b;
+  color: #111;
+}
+.wa-qc-bubble-btn-warn:hover {
+  background: #d97706;
+}
+
+.wa-qc-bubble-btn svg {
+  width: 16px;
+  height: 16px;
+  fill: currentColor;
+  flex-shrink: 0;
+}
+
+/* Stroke-based copy icon should not get solid fill */
+.wa-qc-bubble-btn-copy svg {
+  fill: none;
+  stroke: currentColor;
+}
+
+.wa-qc-bubble-caret {
+  width: 12px;
+  height: 12px;
+  background: #fff;
+  transform: rotate(45deg);
+  box-shadow: 2px 2px 4px rgba(0, 0, 0, 0.08);
+  margin-top: -4px;
+  opacity: 0;
+  transition: opacity 0.2s ease 0.1s;
+}
+.wa-qc-bubble.wa-qc-open .wa-qc-bubble-caret {
+  opacity: 1;
+}
+
+.wa-qc-bubble-label {
+  font-size: 11px;
+  font-weight: 600;
+  color: #065f46;
+  background: rgba(255, 255, 255, 0.95);
+  border: 1px solid #a7f3d0;
+  padding: 4px 10px;
+  border-radius: 999px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
+  opacity: 0;
+  transform: translateY(8px);
+  transition: opacity 0.25s ease, transform 0.25s ease;
+  font-family: ui-monospace, 'SF Mono', Menlo, monospace;
+}
+.wa-qc-bubble.wa-qc-open .wa-qc-bubble-label {
+  opacity: 1;
+  transform: translateY(0);
+  transition-delay: 0.05s;
+}
+
+/* Toast */
+#wa-qc-toast-host {
+  position: fixed;
+  bottom: 24px;
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 2147483647;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+  pointer-events: none;
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+}
+
+.wa-qc-toast {
+  pointer-events: auto;
+  background: #111827;
+  color: #fff;
+  padding: 12px 16px;
+  border-radius: 12px;
+  font-size: 13px;
+  font-weight: 500;
+  box-shadow: 0 12px 40px rgba(0, 0, 0, 0.25);
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  max-width: min(420px, 92vw);
+  opacity: 0;
+  transform: translateY(16px);
+  transition: opacity 0.3s ease, transform 0.3s ease;
+}
+
+.wa-qc-toast.wa-qc-toast-show {
+  opacity: 1;
+  transform: translateY(0);
+}
+
+.wa-qc-toast.wa-qc-toast-success {
+  background: linear-gradient(135deg, #128c7e, #25d366);
+}
+
+.wa-qc-toast.wa-qc-toast-warn {
+  background: #92400e;
+}
+
+.wa-qc-toast-msg {
+  flex: 1;
+  line-height: 1.35;
+}
+
+.wa-qc-toast-msg strong {
+  font-family: ui-monospace, Menlo, monospace;
+  font-weight: 700;
+}
+
+.wa-qc-toast-action {
+  appearance: none;
+  border: none;
+  background: rgba(255, 255, 255, 0.2);
+  color: #fff;
+  font-weight: 700;
+  font-size: 12px;
+  padding: 6px 10px;
+  border-radius: 8px;
+  cursor: pointer;
+  white-space: nowrap;
+}
+.wa-qc-toast-action:hover {
+  background: rgba(255, 255, 255, 0.32);
+}
+
+.wa-qc-toast-close {
+  appearance: none;
+  border: none;
+  background: transparent;
+  color: rgba(255, 255, 255, 0.7);
+  font-size: 16px;
+  line-height: 1;
+  cursor: pointer;
+  padding: 0 2px;
+}
+
+

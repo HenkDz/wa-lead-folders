@@ -1,0 +1,321 @@
+.mbwa-title-host {
+  min-width: 0;
+  align-items: center;
+  gap: 6px;
+}
+
+.mbwa-status {
+  flex: 0 0 auto;
+  max-width: 108px;
+  overflow: hidden;
+  padding: 1px 6px;
+  border-radius: 999px;
+  font: 600 10px/16px -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.mbwa-outcome {
+  flex: 0 0 auto;
+  max-width: 104px;
+  height: 22px;
+  padding: 0 19px 0 7px;
+  border: 1px solid rgba(101, 103, 107, .22);
+  border-radius: 999px;
+  color: #4b4f56;
+  background: rgba(255, 255, 255, .74);
+  font: 600 10px/1 -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+  cursor: pointer;
+}
+
+.mbwa-outcome:has(option:checked:not([value=""])) { color: #176b4f; border-color: rgba(22, 116, 81, .28); background: rgba(22, 116, 81, .08); }
+
+.mbwa-status--linked {
+  color: #167451;
+  background: rgba(22, 116, 81, .12);
+}
+
+.mbwa-status--available {
+  color: #167451;
+  background: rgba(22, 116, 81, .08);
+}
+
+.mbwa-status--saved {
+  color: #6b5b21;
+  background: rgba(139, 117, 39, .11);
+}
+
+.mbwa-status--unmatched {
+  color: #9b5d08;
+  background: rgba(184, 112, 17, .14);
+}
+
+.mbwa-status--possible {
+  color: #365e91;
+  background: rgba(54, 94, 145, .12);
+}
+
+.mbwa-status--unknown {
+  color: #65676b;
+  background: rgba(101, 103, 107, .12);
+}
+
+[role="presentation"][data-mbwa-status="unmatched"] {
+  box-shadow: inset 3px 0 #c17b1e;
+}
+
+.mbwa-filtered-out { display: none !important; }
+
+.mbwa-filter {
+  position: relative;
+  width: 40px;
+  height: 32px;
+  flex: 0 0 40px;
+  display: grid;
+  place-items: center;
+  padding: 0;
+  border: 0;
+  border-radius: 6px;
+  color: #65676b;
+  background: transparent;
+  cursor: pointer;
+}
+
+.mbwa-filter:hover { background: rgba(0, 0, 0, .06); }
+.mbwa-filter:active { transform: translateY(1px); }
+.mbwa-filter[aria-pressed="true"] { color: #9b5d08; background: rgba(184, 112, 17, .14); }
+
+.mbwa-filter svg {
+  width: 20px;
+  fill: none;
+  stroke: currentColor;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  stroke-width: 1.6;
+}
+
+.mbwa-filter span {
+  position: absolute;
+  top: -5px;
+  right: -3px;
+  min-width: 17px;
+  height: 17px;
+  display: grid;
+  place-items: center;
+  box-sizing: border-box;
+  padding: 0 4px;
+  border-radius: 999px;
+  color: white;
+  background: #b87011;
+  font: 700 9px/1 -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+}
+
+.mbwa-review-queue {
+  min-height: 100%;
+  box-sizing: border-box;
+  padding: 0 8px 18px;
+  color: var(--primary-text, #050505);
+  background: var(--surface-background, #fff);
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+}
+
+.mbwa-review-empty { margin: 36px 18px; color: var(--secondary-text, #65676b); font-size: 12px; line-height: 1.5; text-align: center; }
+
+.mbwa-review-item {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 102px;
+  align-items: center;
+  min-height: 76px;
+  border-bottom: 1px solid var(--divider, #e4e6eb);
+}
+
+.mbwa-review-item.is-selected {
+  border-radius: 8px;
+  background: var(--accent-deemphasized, #e7f3ff);
+  box-shadow: inset 3px 0 var(--accent, #0866ff);
+}
+
+.mbwa-review-item.is-selected .mbwa-review-avatar { color: white; background: var(--accent, #0866ff); }
+
+.mbwa-review-open {
+  min-width: 0;
+  display: grid;
+  grid-template-columns: 40px minmax(0, 1fr);
+  align-items: center;
+  gap: 10px;
+  align-self: stretch;
+  padding: 8px;
+  border: 0;
+  color: inherit;
+  background: transparent;
+  text-align: left;
+  cursor: pointer;
+}
+
+.mbwa-review-open:hover { border-radius: 8px; background: var(--hover-overlay, rgba(0, 0, 0, .05)); }
+.mbwa-review-item.is-selected .mbwa-review-open:hover { background: transparent; }
+.mbwa-review-avatar {
+  width: 40px;
+  height: 40px;
+  display: grid;
+  place-items: center;
+  border-radius: 50%;
+  color: #0866ff;
+  background: color-mix(in srgb, #0866ff 12%, var(--surface-background, #fff));
+  font-size: 14px;
+  font-weight: 650;
+}
+.mbwa-review-copy { min-width: 0; display: grid; gap: 4px; }
+.mbwa-review-line { min-width: 0; display: flex; align-items: center; gap: 6px; }
+.mbwa-review-open strong,
+.mbwa-review-open small { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.mbwa-review-open strong { min-width: 0; font-size: 12px; font-weight: 650; }
+.mbwa-review-open small { color: var(--secondary-text, #65676b); font-size: 10px; }
+
+.mbwa-review-status {
+  flex: 0 0 auto;
+  max-width: 88px;
+  overflow: hidden;
+  padding: 3px 6px;
+  border-radius: 999px;
+  color: #9b5d08;
+  background: rgba(184, 112, 17, .12);
+  font-size: 9px;
+  font-style: normal;
+  font-weight: 700;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.mbwa-review-status--possible { color: #365e91; background: rgba(54, 94, 145, .1); }
+.mbwa-review-status--unknown { color: var(--secondary-text, #65676b); background: var(--wash, #f0f2f5); }
+
+.mbwa-review-outcome {
+  width: 98px;
+  height: 28px;
+  padding: 0 20px 0 7px;
+  border: 1px solid var(--divider, #d8dade);
+  border-radius: 7px;
+  color: var(--secondary-text, #65676b);
+  background: var(--surface-background, #fff);
+  font: 600 9px/1 -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+}
+
+.mbwa-phone {
+  position: relative;
+  z-index: 1;
+  padding: 0 2px;
+  border-bottom: 2px solid #25d366;
+  border-radius: 3px;
+  color: inherit;
+  background: linear-gradient(180deg, rgba(37, 211, 102, .22), rgba(37, 211, 102, .12));
+  cursor: pointer;
+  transition: background .15s ease, box-shadow .15s ease;
+}
+
+.mbwa-phone:hover,
+.mbwa-phone.is-active {
+  background: rgba(37, 211, 102, .35);
+  box-shadow: 0 0 0 3px rgba(37, 211, 102, .2);
+}
+
+#mbwa-phone-bubble {
+  position: fixed;
+  z-index: 2147483646;
+  min-width: 168px;
+  display: grid;
+  gap: 6px;
+  transform: translate(-50%, 0);
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+  pointer-events: auto;
+}
+
+#mbwa-phone-bubble.is-above { transform: translate(-50%, -100%); }
+
+#mbwa-phone-bubble small {
+  justify-self: center;
+  padding: 4px 10px;
+  border: 1px solid #a7f3d0;
+  border-radius: 999px;
+  color: #065f46;
+  background: rgba(255, 255, 255, .96);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, .08);
+  font: 700 11px/1.2 ui-monospace, "SFMono-Regular", Consolas, monospace;
+  opacity: 0;
+  transform: translateY(6px);
+  transition: opacity .2s ease, transform .2s ease;
+}
+
+#mbwa-phone-bubble button {
+  min-height: 39px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  padding: 9px 16px;
+  border: 0;
+  border-radius: 999px;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, .18);
+  font: 700 13px/1 -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+  cursor: pointer;
+  opacity: 0;
+  transform: translateY(10px) scale(.94);
+  transition: opacity .25s cubic-bezier(.22, 1, .36, 1), transform .25s cubic-bezier(.22, 1, .36, 1), background .15s ease;
+}
+
+#mbwa-phone-bubble.is-visible small,
+#mbwa-phone-bubble.is-visible button { opacity: 1; transform: translateY(0) scale(1); }
+#mbwa-phone-bubble button:nth-of-type(2) { transition-delay: .04s; }
+#mbwa-phone-bubble button:nth-of-type(3) { transition-delay: .08s; }
+#mbwa-phone-bubble button.is-primary { color: white; background: #25d366; }
+#mbwa-phone-bubble button.is-primary:hover { background: #1da851; }
+#mbwa-phone-bubble button.is-secondary { border: 2px solid #25d366; color: #128c7e; background: white; }
+#mbwa-phone-bubble button.is-secondary:hover { background: #f0fdf4; }
+#mbwa-phone-bubble button.is-copy { border: 2px solid #e5e7eb; color: #374151; background: white; }
+#mbwa-phone-bubble button.is-copy:hover { border-color: #d1d5db; color: #111827; background: #f9fafb; }
+#mbwa-phone-bubble svg { width: 16px; height: 16px; fill: currentColor; }
+#mbwa-phone-bubble .is-copy svg { fill: none; stroke: currentColor; stroke-width: 2; }
+
+#mbwa-quick-toast {
+  position: fixed;
+  bottom: 24px;
+  left: 50%;
+  z-index: 2147483647;
+  max-width: min(420px, 92vw);
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 11px 15px;
+  border-radius: 12px;
+  color: white;
+  background: #111827;
+  box-shadow: 0 12px 40px rgba(0, 0, 0, .25);
+  font: 600 13px/1.35 -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+  opacity: 0;
+  transform: translate(-50%, 14px);
+  transition: opacity .25s ease, transform .25s ease;
+}
+
+#mbwa-quick-toast.is-visible { opacity: 1; transform: translate(-50%, 0); }
+#mbwa-quick-toast button {
+  padding: 6px 10px;
+  border: 0;
+  border-radius: 8px;
+  color: white;
+  background: rgba(255, 255, 255, .18);
+  font: inherit;
+  cursor: pointer;
+}
+
+@media (prefers-color-scheme: dark) {
+  .mbwa-status--linked { color: #7fd1ae; background: rgba(75, 178, 133, .16); }
+  .mbwa-status--available { color: #70cba5; background: rgba(75, 178, 133, .11); }
+  .mbwa-status--saved { color: #d5bd73; background: rgba(192, 158, 61, .14); }
+  .mbwa-status--unmatched { color: #edb967; background: rgba(203, 139, 49, .18); }
+  .mbwa-status--possible { color: #8bb7eb; background: rgba(97, 150, 210, .16); }
+  .mbwa-status--unknown { color: #b0b3b8; background: rgba(176, 179, 184, .12); }
+  .mbwa-filter { color: #b0b3b8; }
+  .mbwa-filter:hover { background: rgba(255, 255, 255, .08); }
+  .mbwa-outcome { color: #b0b3b8; border-color: rgba(255, 255, 255, .16); background: rgba(255, 255, 255, .06); }
+  .mbwa-outcome option { color: #e4e6eb; background: #242526; }
+}

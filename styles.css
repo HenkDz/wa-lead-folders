@@ -1,0 +1,1269 @@
+#wa-lead-folders {
+  --walf-bg: #f7f5f0;
+  --walf-surface: #ffffff;
+  --walf-ink: #1f2a27;
+  --walf-muted: #66726e;
+  --walf-line: #deded8;
+  --walf-accent: #147a64;
+  --walf-accent-strong: #0d5f4d;
+  --walf-shadow: 0 18px 55px rgba(24, 35, 32, .24);
+  color: var(--walf-ink);
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+  line-height: 1.35;
+}
+
+#wa-lead-folders[data-theme="dark"] {
+  --walf-bg: #161717;
+  --walf-surface: #161717;
+  --walf-ink: var(--primary, #fafafa);
+  --walf-muted: var(--secondary, rgba(255, 255, 255, .6));
+  --walf-line: #2e2f2f;
+  --walf-accent: #20a884;
+  --walf-accent-strong: #35c89f;
+  --walf-shadow: none;
+}
+
+#wa-lead-folders button,
+#wa-lead-folders select,
+#wa-lead-folders input,
+#wa-lead-folders textarea {
+  font: inherit;
+}
+
+#walf-rail-slot {
+  width: 40px;
+  height: 40px;
+  flex: 0 0 auto;
+}
+
+#walf-rail-slot .walf-launcher {
+  position: relative;
+  width: 40px;
+  height: 40px;
+  display: grid;
+  place-items: center;
+  padding: 0;
+  border: 0;
+  border-radius: 50%;
+  color: var(--secondary, #aebac1);
+  background: transparent;
+  cursor: pointer;
+  transition: background .15s ease;
+}
+
+#walf-rail-slot .walf-launcher:hover {
+  background: color-mix(in srgb, currentColor 12%, transparent);
+}
+
+#walf-rail-slot .walf-launcher.is-selected {
+  color: var(--primary, #e9edef);
+  background: color-mix(in srgb, currentColor 18%, transparent);
+}
+
+.walf-native-selection-suppressed {
+  background: transparent !important;
+}
+
+.walf-native-selection-suppressed > button {
+  color: var(--secondary, rgba(255, 255, 255, .6)) !important;
+}
+
+#walf-rail-slot .walf-launcher svg {
+  width: 24px;
+  fill: none;
+  stroke: currentColor;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  stroke-width: 1.8;
+}
+
+#walf-rail-slot .walf-launcher-count {
+  position: absolute;
+  right: -4px;
+  top: -3px;
+  min-width: 19px;
+  height: 19px;
+  padding: 0 5px;
+  display: grid;
+  place-items: center;
+  border: 2px solid var(--panel-background, #111b21);
+  border-radius: 12px;
+  color: #14211d;
+  background: #f6c85f;
+  font-size: 10px;
+  font-weight: 800;
+}
+
+#wa-lead-folders .walf-panel {
+  position: fixed;
+  z-index: 9999;
+  left: var(--walf-left);
+  top: var(--walf-top);
+  width: var(--walf-width);
+  height: var(--walf-height);
+  box-sizing: border-box;
+  overflow-y: auto;
+  color: var(--walf-ink);
+  background: var(--walf-bg);
+  box-shadow: none;
+  scrollbar-width: thin;
+  scrollbar-color: var(--walf-line) transparent;
+  animation: walf-enter .2s ease-out;
+}
+
+#wa-lead-folders .walf-panel[hidden] {
+  display: none;
+}
+
+@keyframes walf-enter {
+  from { opacity: 0; transform: translateX(-10px); }
+}
+
+#wa-lead-folders .walf-panel-header {
+  position: sticky;
+  z-index: 2;
+  top: 0;
+  display: flex;
+  align-items: center;
+  min-height: 64px;
+  box-sizing: border-box;
+  padding: 0 20px;
+  background: var(--walf-bg);
+}
+
+#wa-lead-folders .walf-eyebrow,
+#wa-lead-folders .walf-section-label {
+  display: block;
+  color: var(--walf-accent-strong);
+  font-size: 10px;
+  font-weight: 800;
+  letter-spacing: .12em;
+}
+
+#wa-lead-folders h2 {
+  margin: 0;
+  font-family: inherit;
+  font-size: 22px;
+  font-weight: 500;
+  letter-spacing: normal;
+}
+
+#wa-lead-folders .walf-icon-button {
+  width: 34px;
+  height: 34px;
+  border: 1px solid var(--walf-line);
+  border-radius: 50%;
+  color: var(--walf-muted);
+  background: var(--walf-surface);
+  font-size: 23px;
+  line-height: 1;
+  cursor: pointer;
+}
+
+#wa-lead-folders .walf-current {
+  margin: 16px;
+  padding: 15px;
+  border: 1px solid var(--walf-line);
+  border-radius: 14px;
+  background: var(--walf-surface);
+  box-shadow: 0 7px 24px rgba(0, 0, 0, .07);
+}
+
+#wa-lead-folders .walf-current strong {
+  display: block;
+  margin-top: 6px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-size: 15px;
+}
+
+#wa-lead-folders .walf-current p,
+#wa-lead-folders .walf-empty {
+  margin: 8px 0 0;
+  color: var(--walf-muted);
+  font-size: 13px;
+}
+
+#wa-lead-folders .walf-suggestion {
+  display: inline-block;
+  margin-top: 7px;
+  padding: 4px 8px;
+  border-radius: 999px;
+  color: var(--walf-accent-strong);
+  background: color-mix(in srgb, var(--walf-accent) 12%, transparent);
+  font-size: 11px;
+  font-weight: 700;
+}
+
+#wa-lead-folders .walf-classify-form label {
+  display: block;
+  margin: 12px 0 5px;
+  color: var(--walf-muted);
+  font-size: 11px;
+  font-weight: 650;
+}
+
+#wa-lead-folders .walf-form-row {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 7px;
+}
+
+#wa-lead-folders select,
+#wa-lead-folders input[type="datetime-local"],
+#wa-lead-folders .walf-primary {
+  min-height: 38px;
+  border-radius: 9px;
+}
+
+#wa-lead-folders select {
+  min-width: 0;
+  padding: 0 30px 0 10px;
+  border: 1px solid var(--walf-line);
+  color: var(--walf-ink);
+  background: var(--walf-bg);
+}
+
+#wa-lead-folders input[type="datetime-local"] {
+  width: 100%;
+  box-sizing: border-box;
+  padding: 0 10px;
+  border: 1px solid var(--walf-line);
+  color: var(--walf-ink);
+  background: var(--walf-bg);
+  color-scheme: light dark;
+}
+
+#wa-lead-folders .walf-primary {
+  padding: 0 14px;
+  border: 0;
+  color: white;
+  background: var(--walf-accent);
+  font-weight: 750;
+  cursor: pointer;
+}
+
+#wa-lead-folders .walf-folder-toolbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 2px 17px 10px;
+  color: var(--walf-muted);
+  font-size: 11px;
+}
+
+#wa-lead-folders .walf-folder-toolbar > div {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  align-items: center;
+}
+
+#wa-lead-folders .walf-folder-toolbar button {
+  border: 0;
+  color: var(--walf-accent-strong);
+  background: transparent;
+  font-weight: 750;
+  cursor: pointer;
+}
+
+#wa-lead-folders .walf-folder-toolbar [data-action="toggle-grouping"] {
+  padding: 4px 7px;
+  border: 1px solid var(--walf-line);
+  border-radius: 7px;
+  color: var(--walf-muted);
+  background: var(--walf-surface);
+  font-size: 10px;
+}
+
+#wa-lead-folders .walf-folder-toolbar [data-action="toggle-grouping"][aria-pressed="true"] {
+  border-color: color-mix(in srgb, var(--walf-accent) 42%, var(--walf-line));
+  color: var(--walf-accent-strong);
+}
+
+#wa-lead-folders .walf-settings-note {
+  margin: 15px 17px 13px;
+  color: var(--walf-muted);
+  font-size: 12px;
+}
+
+#wa-lead-folders .walf-auto-followup {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 64px;
+  gap: 3px 9px;
+  align-items: center;
+  margin: 0 16px 14px;
+  padding: 11px 13px;
+  border: 1px solid var(--walf-line);
+  border-radius: 10px;
+  background: var(--walf-surface);
+  font-size: 12px;
+  font-weight: 700;
+}
+
+#wa-lead-folders .walf-auto-followup input {
+  min-width: 0;
+  height: 30px;
+  padding: 0 7px;
+  border: 1px solid var(--walf-line);
+  border-radius: 7px;
+  color: var(--walf-ink);
+  background: var(--walf-bg);
+}
+
+#wa-lead-folders .walf-auto-followup em {
+  grid-column: 1 / -1;
+  color: var(--walf-muted);
+  font-size: 10px;
+  font-style: normal;
+  font-weight: 500;
+}
+
+#wa-lead-folders .walf-folders {
+  display: grid;
+  gap: 8px;
+  padding: 0 16px 24px;
+}
+
+#wa-lead-folders .walf-folder {
+  overflow: hidden;
+  border: 1px solid var(--walf-line);
+  border-radius: 12px;
+  background: var(--walf-surface);
+  transition: opacity .15s ease, border-color .15s ease;
+}
+
+#wa-lead-folders .walf-folder.is-hidden {
+  opacity: .62;
+  border-style: dashed;
+}
+
+#wa-lead-folders .walf-folder-empty {
+  padding: 16px 14px;
+  border: 1px dashed var(--walf-line);
+  border-radius: 12px;
+  color: var(--walf-muted);
+  font-size: 12px;
+  text-align: center;
+}
+
+#wa-lead-folders .walf-folder summary,
+#wa-lead-folders .walf-folder-setting {
+  min-height: 49px;
+  display: grid;
+  grid-template-columns: 22px 16px minmax(0, 1fr) auto 24px 24px 24px 24px;
+  gap: 8px;
+  align-items: center;
+  padding: 0 10px 0 8px;
+  list-style: none;
+  user-select: none;
+}
+
+#wa-lead-folders .walf-folder summary { grid-template-columns: 10px minmax(0, 1fr) auto 26px 26px 16px; cursor: pointer; }
+
+#wa-lead-folders .walf-folder summary::-webkit-details-marker { display: none; }
+#wa-lead-folders .walf-folder-reorder {
+  display: grid;
+  gap: 1px;
+}
+#wa-lead-folders .walf-folder-move {
+  width: 20px;
+  height: 14px;
+  display: grid;
+  place-items: center;
+  padding: 0;
+  border: 0;
+  border-radius: 4px;
+  color: var(--walf-muted);
+  background: transparent;
+  font-size: 8px;
+  line-height: 1;
+  cursor: pointer;
+}
+#wa-lead-folders .walf-folder-move:hover:not(:disabled) {
+  color: var(--walf-accent-strong);
+  background: color-mix(in srgb, var(--walf-accent) 10%, transparent);
+}
+#wa-lead-folders .walf-folder-move:disabled {
+  opacity: .28;
+  cursor: default;
+}
+#wa-lead-folders .walf-folder summary i,
+#wa-lead-folders .walf-folder-setting i,
+#wa-lead-folders .walf-folder-color {
+  width: 16px;
+  height: 16px;
+  padding: 0;
+  border: 0;
+  border-radius: 5px;
+  background: var(--folder-color);
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--folder-color) 22%, transparent);
+  cursor: pointer;
+}
+#wa-lead-folders .walf-folder-color:hover {
+  box-shadow: 0 0 0 4px color-mix(in srgb, var(--folder-color) 34%, transparent);
+}
+#wa-lead-folders .walf-folder summary span,
+#wa-lead-folders .walf-folder-setting span {
+  min-width: 0;
+  overflow: hidden;
+  font-size: 13px;
+  font-weight: 750;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+#wa-lead-folders .walf-folder summary b,
+#wa-lead-folders .walf-folder-setting b { color: var(--walf-muted); font-size: 11px; }
+#wa-lead-folders .walf-folder-edit,
+#wa-lead-folders .walf-folder-reply,
+#wa-lead-folders .walf-folder-visibility,
+#wa-lead-folders .walf-folder-delete {
+  width: 24px;
+  height: 24px;
+  display: grid;
+  place-items: center;
+  padding: 0;
+  border: 0;
+  border-radius: 7px;
+  color: var(--walf-muted);
+  background: transparent;
+  font-size: 13px;
+  cursor: pointer;
+}
+#wa-lead-folders .walf-folder-edit:hover,
+#wa-lead-folders .walf-folder-reply:hover,
+#wa-lead-folders .walf-folder-reply.has-reply,
+#wa-lead-folders .walf-folder-visibility:hover {
+  color: var(--walf-accent-strong);
+  background: color-mix(in srgb, var(--walf-accent) 10%, transparent);
+}
+#wa-lead-folders .walf-folder-visibility[aria-pressed="true"] {
+  color: var(--walf-muted);
+}
+#wa-lead-folders .walf-folder-delete:hover {
+  color: #ff9c8d;
+  background: rgba(199, 77, 63, .12);
+}
+#wa-lead-folders .walf-folder summary svg {
+  width: 15px;
+  fill: none;
+  stroke: var(--walf-muted);
+  stroke-width: 1.8;
+  transition: transform .16s ease;
+}
+#wa-lead-folders .walf-folder[open] summary svg { transform: rotate(90deg); }
+
+#wa-lead-folders .walf-contact-list {
+  border-top: 1px solid var(--walf-line);
+}
+
+#wa-lead-folders .walf-contact {
+  display: flex;
+  align-items: center;
+  border-bottom: 1px solid color-mix(in srgb, var(--walf-line) 65%, transparent);
+}
+#wa-lead-folders .walf-contact:last-child { border-bottom: 0; }
+
+#wa-lead-folders .walf-contact-label {
+  min-width: 0;
+  flex: 1;
+  display: flex;
+  gap: 9px;
+  align-items: center;
+  padding: 9px 8px 9px 13px;
+  border: 0;
+  color: var(--walf-ink);
+  background: transparent;
+  text-align: left;
+}
+#wa-lead-folders .walf-contact-label span {
+  width: 28px;
+  height: 28px;
+  flex: 0 0 auto;
+  display: grid;
+  place-items: center;
+  border-radius: 50%;
+  color: var(--walf-accent-strong);
+  background: color-mix(in srgb, var(--walf-accent) 13%, transparent);
+  font-size: 11px;
+  font-weight: 800;
+}
+#wa-lead-folders .walf-contact-label b {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-size: 12px;
+}
+
+#pane-side .walf-inline-hidden {
+  display: none !important;
+}
+
+#pane-side .walf-row-groups {
+  position: relative;
+  z-index: 4;
+  flex: 0 0 auto;
+  display: flex;
+  gap: 3px;
+  align-items: center;
+  margin-inline-start: auto;
+  padding-inline-start: 5px;
+}
+
+#pane-side .walf-row-groups button {
+  width: 20px;
+  height: 20px;
+  display: grid;
+  place-items: center;
+  padding: 0;
+  border: 0;
+  border-radius: 6px;
+  color: white;
+  background: var(--folder-color);
+  font: 700 10px/1 -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+  cursor: pointer;
+}
+
+/* Score is context, not an action: tinted text keeps the solid folder chip as the primary mark. */
+#pane-side .walf-lead-score,
+#pane-side .walf-reminder-due {
+  min-width: 20px;
+  height: 20px;
+  display: grid;
+  place-items: center;
+  box-sizing: border-box;
+  border-radius: 6px;
+  font: 700 10px/1 -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+}
+
+#pane-side .walf-lead-score {
+  --score-color: #8a9a95;
+  color: var(--score-color);
+  background: color-mix(in srgb, var(--score-color) 18%, transparent);
+}
+#pane-side .walf-lead-score[data-level="warm"] { --score-color: #e8b443; }
+#pane-side .walf-lead-score[data-level="hot"] { --score-color: #f07a6a; }
+#pane-side .walf-reminder-due { border-radius: 50%; color: white; background: #e0533f; }
+
+#pane-side .walf-row-group-trigger:not(.is-suggested) {
+  opacity: .72;
+}
+
+#pane-side .walf-row-group-trigger.is-suggested {
+  box-shadow: 0 0 0 2px color-mix(in srgb, var(--folder-color) 22%, transparent);
+}
+
+#pane-side .walf-row-group-expand {
+  width: 17px !important;
+  border: 0 !important;
+  color: inherit !important;
+  background: transparent !important;
+}
+
+#pane-side .walf-row-group-expand svg {
+  width: 14px;
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 1.8;
+  transition: transform .18s ease;
+}
+
+#pane-side .walf-row-groups.is-open .walf-row-group-expand svg {
+  transform: rotate(180deg);
+}
+
+#pane-side .walf-row-group-choices {
+  max-width: 0;
+  display: flex;
+  gap: 3px;
+  overflow: hidden;
+  opacity: 0;
+  transform: translateX(5px);
+  transition: max-width .2s ease, opacity .15s ease, transform .2s ease;
+}
+
+#pane-side .walf-row-groups.is-open .walf-row-group-choices {
+  max-width: 220px;
+  overflow: visible;
+  opacity: 1;
+  transform: translateX(0);
+}
+
+#pane-side .walf-row-group-choice.is-hidden-folder {
+  opacity: .55;
+  border-style: dashed;
+  filter: saturate(.7);
+}
+
+#pane-side .walf-row-group-more {
+  --folder-color: #66726e;
+  letter-spacing: .04em;
+}
+
+#pane-side .walf-row-group-more-wrap {
+  position: relative;
+  display: flex;
+  align-items: center;
+}
+
+#pane-side .walf-row-group-hidden-menu {
+  position: absolute;
+  z-index: 20;
+  top: calc(100% + 4px);
+  right: 0;
+  min-width: 148px;
+  max-height: 220px;
+  overflow-y: auto;
+  padding: 4px;
+  border: 1px solid rgba(255, 255, 255, .12);
+  border-radius: 10px;
+  background: #1f2c2a;
+  box-shadow: 0 10px 28px rgba(0, 0, 0, .35);
+}
+
+#pane-side .walf-row-group-hidden-item {
+  width: 100% !important;
+  height: auto !important;
+  min-height: 28px;
+  display: flex !important;
+  gap: 8px;
+  align-items: center;
+  justify-content: flex-start;
+  padding: 5px 8px !important;
+  border: 0 !important;
+  border-radius: 7px !important;
+  color: #e9edef !important;
+  background: transparent !important;
+  font: 700 11px/1.2 -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif !important;
+  text-align: left;
+  white-space: nowrap;
+}
+
+#pane-side .walf-row-group-hidden-item:hover {
+  background: rgba(255, 255, 255, .08) !important;
+}
+
+#pane-side .walf-row-group-hidden-item i {
+  width: 8px;
+  height: 8px;
+  flex: 0 0 8px;
+  border-radius: 3px;
+  background: var(--folder-color);
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--folder-color) 18%, transparent);
+}
+
+#pane-side .walf-inline-bulk {
+  position: absolute;
+  top: 8px;
+  left: 0;
+  width: 100%;
+  height: 36px;
+  box-sizing: border-box;
+}
+
+#pane-side .walf-inline-bulk {
+  padding: 0 12px;
+}
+
+#pane-side .walf-inline-bulk button {
+  height: 28px;
+  display: inline-flex;
+  gap: 6px;
+  align-items: center;
+  margin-top: 4px;
+  padding: 0 12px 0 10px;
+  border: 0;
+  border-radius: 999px;
+  color: #21c063;
+  background: rgba(33, 192, 99, .1);
+  font: 600 12px/1 -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+  cursor: pointer;
+  transition: background .15s ease;
+}
+
+#pane-side .walf-inline-bulk button:hover { background: rgba(33, 192, 99, .18); }
+
+#pane-side .walf-inline-tabs {
+  position: absolute;
+  top: 8px;
+  left: 0;
+  width: 100%;
+  height: 48px;
+  display: flex;
+  gap: 6px;
+  align-items: center;
+  box-sizing: border-box;
+  overflow-x: auto;
+  padding: 0 12px;
+  border-bottom: 1px solid rgba(134, 150, 143, .15);
+  background: var(--panel-background, #111b21);
+  scrollbar-width: none;
+  scroll-padding-inline: 24px;
+}
+
+#pane-side .walf-inline-tabs::-webkit-scrollbar { display: none; }
+#pane-side .walf-inline-tabs.has-more-end { mask-image: linear-gradient(to right, #000 calc(100% - 40px), transparent); }
+#pane-side .walf-inline-tabs.has-more-start { mask-image: linear-gradient(to right, transparent, #000 40px); }
+#pane-side .walf-inline-tabs.has-more-start.has-more-end {
+  mask-image: linear-gradient(to right, transparent, #000 40px, #000 calc(100% - 40px), transparent);
+}
+
+/* Single-line chips that sit with WhatsApp's native filter pills instead of competing with them. */
+#pane-side .walf-inline-tab {
+  height: 32px;
+  max-width: 200px;
+  flex: 0 0 auto;
+  display: flex;
+  gap: 7px;
+  align-items: center;
+  box-sizing: border-box;
+  padding: 0 12px 0 10px;
+  border: 1px solid rgba(134, 150, 143, .28);
+  border-radius: 999px;
+  color: var(--secondary, #aebac1);
+  background: transparent;
+  font: 500 13px/1 -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+  white-space: nowrap;
+  cursor: pointer;
+  transition: background .15s ease, border-color .15s ease, color .15s ease;
+}
+
+#pane-side .walf-inline-tab:hover {
+  color: var(--primary, #e9edef);
+  background: color-mix(in srgb, currentColor 6%, transparent);
+}
+
+#pane-side .walf-inline-tab[aria-selected="true"] {
+  border-color: color-mix(in srgb, var(--folder-color, #9aa3ad) 55%, transparent);
+  color: var(--primary, #e9edef);
+  background: color-mix(in srgb, var(--folder-color, #9aa3ad) 18%, transparent);
+}
+
+#pane-side .walf-inline-tab:focus-visible {
+  outline: 2px solid color-mix(in srgb, var(--folder-color, #25d366) 75%, white);
+  outline-offset: 1px;
+}
+
+#pane-side .walf-inline-tab i {
+  width: 8px;
+  height: 8px;
+  flex: 0 0 8px;
+  border-radius: 50%;
+  background: var(--folder-color, #9aa3ad);
+}
+
+#pane-side .walf-inline-tab b {
+  min-width: 0;
+  overflow: hidden;
+  font-weight: inherit;
+  text-overflow: ellipsis;
+}
+
+#pane-side .walf-inline-tab-total {
+  opacity: .6;
+  font-size: 12px;
+  font-variant-numeric: tabular-nums;
+}
+
+#pane-side .walf-inline-tab-alert {
+  min-width: 18px;
+  height: 18px;
+  display: grid;
+  place-items: center;
+  box-sizing: border-box;
+  margin-inline-end: -6px;
+  padding: 0 5px;
+  border-radius: 999px;
+  color: #0b141a;
+  background: #21c063;
+  font-size: 11px;
+  font-style: normal;
+  font-weight: 700;
+}
+
+#pane-side .walf-inline-tab-alert[data-kind="due"] { color: white; background: #e0533f; }
+#pane-side .walf-inline-tab-alert[hidden] { display: none; }
+
+#pane-side .walf-inline-tabs.is-stuck {
+  box-shadow: 0 6px 12px -6px rgba(0, 0, 0, .45);
+}
+
+#pane-side .walf-inline-empty {
+  position: absolute;
+  top: 8px;
+  left: 0;
+  width: 100%;
+  height: 40px;
+  display: grid;
+  place-items: center;
+  box-sizing: border-box;
+  color: var(--secondary, #aebac1);
+  font: 600 12px/1 -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+}
+
+
+#pane-side .walf-inline-section {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 40px;
+  display: flex;
+  gap: 8px;
+  align-items: flex-end;
+  box-sizing: border-box;
+  padding: 0 16px 8px;
+  color: var(--secondary, #8696a0);
+  font: 500 12px/1 -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+  letter-spacing: .02em;
+  text-transform: uppercase;
+}
+
+#pane-side .walf-inline-section b {
+  font-weight: 500;
+  opacity: .7;
+}
+
+/* Off-list leads mirror native rows (avatar size, type scale) so the group reads as one list. */
+#pane-side .walf-inline-missing {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 72px;
+  box-sizing: border-box;
+}
+
+#pane-side .walf-inline-missing button {
+  width: 100%;
+  height: 100%;
+  display: grid;
+  grid-template-columns: 49px minmax(0, 1fr);
+  gap: 15px;
+  align-items: center;
+  padding: 0 16px 0 13px;
+  border: 0;
+  color: inherit;
+  background: transparent;
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+
+#pane-side .walf-inline-missing button:hover {
+  background: var(--background-default-hover, rgba(255, 255, 255, .05));
+}
+
+#pane-side .walf-inline-missing-avatar {
+  width: 49px;
+  height: 49px;
+  display: grid;
+  place-items: center;
+  border-radius: 50%;
+  color: color-mix(in srgb, var(--folder-color, #8696a0) 65%, white);
+  background: color-mix(in srgb, var(--folder-color, #8696a0) 16%, transparent);
+  font-size: 18px;
+  font-weight: 500;
+}
+
+#pane-side .walf-inline-missing-copy {
+  min-width: 0;
+  height: 100%;
+  display: grid;
+  align-content: center;
+  gap: 4px;
+  border-bottom: 1px solid rgba(134, 150, 143, .12);
+}
+
+#pane-side .walf-inline-missing b {
+  overflow: hidden;
+  color: var(--primary, #e9edef);
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-size: 16px;
+  font-weight: 400;
+}
+
+#pane-side .walf-inline-missing em {
+  overflow: hidden;
+  color: var(--secondary, #8696a0);
+  font-size: 14px;
+  font-style: normal;
+  font-weight: 400;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+#main header .walf-native-lead-tools {
+  display: flex;
+  flex: 0 0 auto;
+  gap: 6px;
+  align-items: center;
+  margin-inline: 12px auto;
+  font: 650 11px/1 -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+}
+
+#main header [data-testid="conversation-info-header"] { flex: 0 0 auto; min-width: max-content; }
+
+#main header .walf-native-menu { position: relative; display: flex; align-items: center; gap: 6px; }
+
+#main header .walf-native-menu-trigger {
+  min-width: 112px;
+  height: 36px;
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  box-sizing: border-box;
+  padding: 3px 12px 3px 14px;
+  border: 1px solid color-mix(in srgb, currentColor 16%, transparent);
+  border-radius: 999px;
+  color: var(--primary, #e9edef);
+  background: transparent;
+  cursor: pointer;
+}
+
+#main header .walf-native-menu-trigger:hover { background: color-mix(in srgb, currentColor 8%, transparent); }
+
+#main header .walf-native-menu-trigger b { max-width: 105px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+#main header .walf-native-menu-trigger svg { width: 14px; margin-left: auto; fill: none; stroke: currentColor; stroke-width: 1.8; transition: transform .16s ease; }
+#main header .walf-native-menu-trigger[aria-expanded="true"] svg { transform: rotate(180deg); }
+#main header .walf-native-menu-trigger.is-suggested { border-style: dashed; }
+#main header .walf-native-menu-trigger.is-compact {
+  min-width: 36px;
+  padding: 3px 10px;
+}
+#main header .walf-native-auto-assign {
+  height: 36px;
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  box-sizing: border-box;
+  padding: 3px 14px 3px 6px;
+  border: 1px dashed color-mix(in srgb, var(--folder-color, #25d366) 70%, transparent);
+  border-radius: 999px;
+  color: var(--primary, #e9edef);
+  background: color-mix(in srgb, var(--folder-color, #25d366) 16%, transparent);
+  cursor: pointer;
+}
+#main header .walf-native-auto-assign i {
+  width: 24px;
+  height: 24px;
+  display: grid;
+  place-items: center;
+  border-radius: 50%;
+  color: white;
+  background: var(--folder-color, #25d366);
+  font: 800 11px/1 -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+  font-style: normal;
+}
+#main header .walf-native-auto-assign b {
+  max-width: 128px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+#main header .walf-native-popover {
+  position: fixed;
+  inset: auto;
+  margin: 0;
+  width: 292px;
+  display: grid;
+  gap: 10px;
+  box-sizing: border-box;
+  padding: 13px;
+  border: 1px solid color-mix(in srgb, currentColor 16%, transparent);
+  border-radius: 12px;
+  color: var(--primary, #e9edef);
+  background: var(--panel-background, #111b21);
+  box-shadow: 0 12px 32px rgba(0, 0, 0, .32);
+}
+
+#main header .walf-native-popover:not(:popover-open) { display: none; }
+
+#main header .walf-native-popover label { display: grid; grid-template-columns: 66px minmax(0, 1fr); gap: 8px; align-items: center; }
+#main header .walf-native-popover label > span { color: var(--secondary, #8696a0); }
+
+.walf-copy-phone {
+  width: 28px;
+  height: 28px;
+  flex: 0 0 28px;
+  display: grid;
+  place-items: center;
+  box-sizing: border-box;
+  padding: 0;
+  border: 0;
+  border-radius: 50%;
+  color: var(--secondary, #aebac1);
+  background: transparent;
+  cursor: pointer;
+}
+
+.walf-copy-phone:hover { color: var(--primary, #e9edef); background: rgba(134, 150, 160, .15); }
+.walf-copy-phone.is-copied { color: #25d366; }
+.walf-copy-phone svg { width: 17px; fill: none; stroke: currentColor; stroke-width: 1.7; }
+.walf-contact-copy { display: inline-grid; margin-inline-start: 5px; vertical-align: middle; }
+
+#main header .walf-native-score {
+  height: 24px;
+  display: grid;
+  place-items: center;
+  box-sizing: border-box;
+  padding: 0 9px;
+  border-radius: 999px;
+  color: #715100;
+  background: #f6c85f;
+  white-space: nowrap;
+}
+
+#main header .walf-native-score[data-level="hot"] { color: white; background: #d95649; }
+#main header .walf-native-score[data-level="cold"] { color: #41504b; background: #c9d1ce; }
+
+#main header .walf-native-folder,
+#main header .walf-native-reminder,
+#main header .walf-native-queue {
+  width: 100%;
+  height: 34px;
+  box-sizing: border-box;
+  border: 1px solid color-mix(in srgb, currentColor 18%, transparent);
+  border-radius: 8px;
+  color: var(--primary, inherit);
+  background: color-mix(in srgb, currentColor 7%, transparent);
+  font: inherit;
+}
+
+#main header .walf-native-folder {
+  padding: 0 24px 0 8px;
+}
+
+#main header .walf-native-folder.is-suggested { border-style: dashed; }
+#main header .walf-native-folder option { color: var(--primary, inherit); background: var(--dropdown-background, #233138); }
+#main header .walf-native-queue option { color: var(--primary, inherit); background: var(--dropdown-background, #233138); }
+
+#main header .walf-native-reminder {
+  padding: 0 6px;
+  color-scheme: light dark;
+}
+
+#main header .walf-native-reminder:disabled { opacity: .45; }
+
+#main header .walf-native-queue {
+  padding: 0 22px 0 7px;
+}
+
+#main header .walf-lead-summary i {
+  max-width: 110px;
+  overflow: hidden;
+  padding: 5px 7px;
+  border-radius: 7px;
+  color: var(--secondary, #8696a0);
+  background: color-mix(in srgb, currentColor 8%, transparent);
+  font-style: normal;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+#main header .walf-native-triage,
+#main header .walf-native-next {
+  height: 34px;
+  padding: 0 8px;
+  border: 1px solid color-mix(in srgb, currentColor 18%, transparent);
+  border-radius: 8px;
+  color: var(--secondary, #8696a0);
+  background: transparent;
+  font: inherit;
+  cursor: pointer;
+}
+
+#main header .walf-native-triage[aria-pressed="true"] {
+  color: #d9fff5;
+  border-color: #00a884;
+  background: #087f69;
+}
+
+#main header .walf-native-next { width: 29px; padding: 0; font-size: 17px; }
+#main header .walf-native-actions { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+#main header .walf-native-next { width: auto; font-size: 11px; }
+#main header .walf-lead-summary { display: flex; min-width: 0; gap: 4px; flex-wrap: wrap; padding-top: 2px; }
+
+#wa-lead-folders .walf-contact-remove {
+  width: 35px;
+  height: 35px;
+  margin-right: 5px;
+  border: 0;
+  color: var(--walf-muted);
+  background: transparent;
+  font-size: 18px;
+  cursor: pointer;
+}
+
+#wa-lead-folders .walf-empty { padding: 4px 13px 13px; }
+
+#wa-lead-folders .walf-panel-score {
+  display: inline-block;
+  margin-top: 7px;
+  margin-left: 5px;
+  padding: 4px 8px;
+  border-radius: 999px;
+  color: var(--walf-muted);
+  background: color-mix(in srgb, var(--walf-muted) 12%, transparent);
+  font-size: 11px;
+  font-weight: 700;
+}
+#wa-lead-folders .walf-panel-score[data-level="warm"] { color: #8b6300; background: rgba(246, 200, 95, .18); }
+#wa-lead-folders .walf-panel-score[data-level="hot"] { color: #c74d3f; background: rgba(226, 92, 75, .15); }
+
+#wa-lead-folders .walf-data-tools {
+  display: flex;
+  gap: 8px;
+  padding: 0 16px 24px;
+}
+
+#wa-lead-folders .walf-data-tools button {
+  flex: 1;
+  padding: 7px 5px;
+  border: 1px solid var(--walf-line);
+  border-radius: 8px;
+  color: var(--walf-muted);
+  background: var(--walf-surface);
+  font-size: 10px;
+  font-weight: 700;
+  text-align: center;
+  cursor: pointer;
+}
+
+#wa-lead-folders .walf-data-tools input { display: none; }
+
+#wa-lead-folders .walf-quick-replies {
+  position: fixed;
+  z-index: 9997;
+  display: flex;
+  gap: 4px;
+  padding: 3px;
+  border-radius: 999px;
+  background: color-mix(in srgb, var(--walf-bg) 92%, transparent);
+  box-shadow: 0 5px 16px rgba(0, 0, 0, .2);
+}
+
+#wa-lead-folders .walf-quick-replies button {
+  max-width: 150px;
+  height: 27px;
+  overflow: hidden;
+  padding: 0 10px;
+  border: 0;
+  border-radius: 999px;
+  color: white;
+  background: var(--walf-accent);
+  font-size: 11px;
+  font-weight: 750;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  cursor: pointer;
+}
+
+#wa-lead-folders .walf-quick-replies button:not(.is-next) { color: var(--walf-muted); background: transparent; }
+
+#wa-lead-folders .walf-dialog {
+  width: min(440px, calc(100vw - 32px));
+  max-height: min(720px, calc(100vh - 32px));
+  box-sizing: border-box;
+  overflow: hidden;
+  padding: 0;
+  border: 1px solid var(--walf-line);
+  border-radius: 16px;
+  color: var(--walf-ink);
+  background: var(--walf-bg);
+  box-shadow: 0 24px 80px rgba(0, 0, 0, .42);
+}
+
+#wa-lead-folders .walf-dialog::backdrop { background: rgba(8, 13, 12, .58); backdrop-filter: blur(2px); }
+#wa-lead-folders .walf-dialog form { max-height: inherit; display: flex; flex-direction: column; }
+#wa-lead-folders .walf-dialog header,
+#wa-lead-folders .walf-dialog footer { display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 16px 18px; }
+#wa-lead-folders .walf-dialog header { border-bottom: 1px solid var(--walf-line); }
+#wa-lead-folders .walf-dialog header small { color: var(--walf-accent-strong); font-size: 9px; font-weight: 800; letter-spacing: .12em; }
+#wa-lead-folders .walf-dialog h3 { margin: 2px 0 0; font-size: 18px; font-weight: 650; }
+#wa-lead-folders .walf-dialog header button { width: 32px; height: 32px; padding: 0; border: 0; border-radius: 50%; color: var(--walf-muted); background: color-mix(in srgb, currentColor 10%, transparent); font-size: 22px; cursor: pointer; }
+#wa-lead-folders .walf-dialog > form > p { margin: 0; padding: 14px 18px 0; color: var(--walf-muted); font-size: 12px; }
+#wa-lead-folders .walf-dialog-fields { overflow-y: auto; display: grid; gap: 13px; padding: 16px 18px; }
+#wa-lead-folders .walf-dialog-fields label { display: grid; gap: 6px; }
+#wa-lead-folders .walf-dialog-fields label > span { font-size: 12px; font-weight: 750; }
+#wa-lead-folders .walf-dialog-fields label > em { color: var(--walf-muted); font-size: 10px; font-style: normal; }
+#wa-lead-folders .walf-dialog input,
+#wa-lead-folders .walf-dialog textarea { box-sizing: border-box; width: 100%; border: 1px solid var(--walf-line); border-radius: 9px; color: var(--walf-ink); background: var(--walf-surface); outline: 0; }
+#wa-lead-folders .walf-dialog input { height: 38px; padding: 0 11px; }
+#wa-lead-folders .walf-dialog textarea { min-height: 74px; resize: vertical; padding: 9px 11px; line-height: 1.4; }
+#wa-lead-folders .walf-dialog-fields label.is-color { gap: 8px; }
+#wa-lead-folders .walf-color-field {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 38px;
+  gap: 8px;
+  align-items: center;
+}
+#wa-lead-folders .walf-color-swatches {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+#wa-lead-folders .walf-color-swatch {
+  width: 22px;
+  height: 22px;
+  padding: 0;
+  border: 2px solid color-mix(in srgb, var(--walf-ink) 12%, transparent);
+  border-radius: 6px;
+  background: var(--folder-color);
+  cursor: pointer;
+}
+#wa-lead-folders .walf-color-swatch.is-selected {
+  border-color: var(--walf-ink);
+  box-shadow: 0 0 0 2px color-mix(in srgb, var(--folder-color) 40%, transparent);
+}
+#wa-lead-folders .walf-dialog input[type="color"] {
+  width: 38px;
+  height: 32px;
+  padding: 2px;
+  cursor: pointer;
+}
+#wa-lead-folders .walf-dialog input:focus,
+#wa-lead-folders .walf-dialog textarea:focus { border-color: var(--walf-accent); box-shadow: 0 0 0 3px color-mix(in srgb, var(--walf-accent) 18%, transparent); }
+#wa-lead-folders .walf-dialog-error { margin: 0 18px; padding: 9px 11px; border-radius: 8px; color: #ffb4aa; background: rgba(199, 77, 63, .16); font-size: 11px; }
+#wa-lead-folders .walf-dialog footer { border-top: 1px solid var(--walf-line); justify-content: flex-end; }
+#wa-lead-folders .walf-dialog footer button { min-height: 36px; padding: 0 14px; border: 1px solid var(--walf-line); border-radius: 9px; color: var(--walf-ink); background: transparent; font-weight: 700; cursor: pointer; }
+#wa-lead-folders .walf-dialog footer .is-primary { color: white; border-color: var(--walf-accent); background: var(--walf-accent); }
+#wa-lead-folders .walf-dialog footer .is-danger { color: white; border-color: #c74d3f; background: #c74d3f; }
+
+#wa-lead-folders .walf-toast {
+  position: fixed;
+  z-index: 10000;
+  left: calc(var(--walf-left) + 14px);
+  bottom: 20px;
+  max-width: calc(var(--walf-width) - 52px);
+  padding: 9px 12px;
+  border-radius: 9px;
+  color: white;
+  background: #17231f;
+  box-shadow: 0 8px 25px rgba(0, 0, 0, .3);
+  font-size: 12px;
+  opacity: 0;
+  pointer-events: none;
+  transform: translateY(8px);
+  transition: opacity .16s ease, transform .16s ease;
+}
+#wa-lead-folders .walf-toast.is-visible { opacity: 1; transform: translateY(0); }
+
+#wa-lead-folders button:focus-visible,
+#wa-lead-folders select:focus-visible,
+#wa-lead-folders input:focus-visible,
+#walf-rail-slot .walf-launcher:focus-visible,
+#wa-lead-folders summary:focus-visible {
+  outline: 2px solid var(--walf-accent-strong);
+  outline-offset: 2px;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  #wa-lead-folders *, #wa-lead-folders *::before, #wa-lead-folders *::after {
+    animation-duration: .01ms !important;
+    transition-duration: .01ms !important;
+  }
+}
