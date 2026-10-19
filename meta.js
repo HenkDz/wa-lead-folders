@@ -133,7 +133,7 @@
   function wrapPhoneText(node) {
     const text = node.nodeValue;
     if (!text || !/\d/.test(text) || node.parentElement?.closest(
-      "script,style,textarea,input,button,[contenteditable='true'],.mbwa-phone,.wa-qc-phone,.mbwa-status"
+      "script,style,textarea,input,button,[contenteditable='true'],.mbwa-phone,.wa-qc-phone,.mbwa-row-line,#mbwa-card,.mbwa-review-queue"
     )) return;
     PHONE_PATTERN.lastIndex = 0;
     if (!PHONE_PATTERN.test(text)) return;
@@ -380,60 +380,164 @@
     location.assign(metaThreadUrl(location.href, record));
   }
 
-  function setStatus(item, result, messenger) {
-    const host = item.titleSurface.parentElement;
-    const folder = result.status === "linked" && (folderFor(result.match) || result.match.folderName);
-    const labels = {
-      linked: folder ? `WA chat · ${folder}` : "WA conversation",
-      available: "Has WhatsApp",
-      saved: "WA saved · unchecked",
-      possible: "Same name only",
-      unmatched: "Check WhatsApp",
-      unknown: "Open to get phone"
-    };
-    const label = labels[result.status];
-    const status = result.status;
-    item.row.dataset.mbwaStatus = status;
-    host.classList.add("mbwa-title-host");
-    let badge = host.querySelector(":scope > .mbwa-status");
-    if (!badge) {
-      badge = document.createElement("span");
-      host.append(badge);
-    }
-    badge.className = `mbwa-status mbwa-status--${status}`;
-    badge.textContent = label;
-    const explanations = {
-      linked: "Identical phone number and an existing WhatsApp conversation",
-      available: "This phone opened successfully in WhatsApp, but no conversation exists yet",
-      saved: "This phone was saved by the extension but has not been rechecked",
-      possible: "Only the profile name matches; the phone number is not confirmed",
-      unmatched: "Phone is known from Messenger but has not been checked in WhatsApp",
-      unknown: "Open this Messenger thread so its form phone number can be read"
-    };
-    badge.title = explanations[result.status];
-    let select = host.querySelector(":scope > .mbwa-outcome");
-    if (!select) {
-      select = document.createElement("select");
-      select.className = "mbwa-outcome";
-      select.setAttribute("aria-label", `Outcome for ${messenger.name}`);
-      select.innerHTML = `<option value="">Set outcome</option>${Object.entries(OUTCOMES)
-        .map(([value, text]) => `<option value="${value}">${text}</option>`).join("")}`;
-      select.addEventListener("click", (event) => event.stopPropagation());
-      select.addEventListener("change", async (event) => {
-        event.stopPropagation();
-        const key = select.dataset.outcomeKey;
-        if (select.value) state.outcomes[key] = { status: select.value, updatedAt: Date.now() };
-        else delete state.outcomes[key];
-        await storageSet({ [STATE_KEY]: state });
-        quickToast(select.value ? `${OUTCOMES[select.value]} saved` : "Outcome cleared");
-        await runSync();
-        if (select.value) setTimeout(() => openNextMetaLead(item.row), 120);
+  // ---- Presentation -------------------------------------------------------------------------
+
+  const STATUS = {
+    linked: { tone: "ok", label: "On WhatsApp", hint: "Same phone number as an existing WhatsApp conversation" },
+    available: { tone: "ok", label: "Has WhatsApp", hint: "This phone opened in WhatsApp, but no conversation exists yet" },
+    saved: { tone: "warn", label: "Saved · not confirmed", hint: "Saved by the extension but not rechecked in WhatsApp" },
+    possible: { tone: "info", label: "Name match only", hint: "Only the profile name matches; the phone number isn't confirmed" },
+    unmatched: { tone: "warn", label: "Check WhatsApp", hint: "Phone is known from the form but hasn't been checked in WhatsApp" },
+    unknown: { tone: "muted", label: "No phone yet", hint: "Open this conversation so its form phone number can be read" }
+  };
+  const OUTCOME_TONES = { "has-wa": "ok", "messaged-wa": "ok", "no-wa": "muted", invalid: "bad", converted: "win" };
+  const CHEVRON = `<svg viewBox="0 0 16 16" aria-hidden="true"><path d="m4 6 4 4 4-4"/></svg>`;
+
+  function statusFor(result) {
+    const base = STATUS[result.status] || STATUS.unknown;
+    const folder = result.status === "linked" && (folderFor(result.match) || result.match?.folderName);
+    return { ...base, status: result.status, label: folder || base.label, folder };
+  }
+
+  function el(tag, className, text) {
+    const node = document.createElement(tag);
+    if (className) node.className = className;
+    if (text !== undefined) node.textContent = text;
+    return node;
+  }
+
+  function stop(event) {
+    event.preventDefault();
+    event.stopPropagation();
+  }
+
+  async function saveOutcome(key, value, advanceFrom) {
+    if (value) state.outcomes[key] = { status: value, updatedAt: Date.now() };
+    else delete state.outcomes[key];
+    await storageSet({ [STATE_KEY]: state });
+    quickToast(value ? `${OUTCOMES[value]} saved` : "Outcome cleared");
+    await runSync();
+    if (value && advanceFrom !== undefined) setTimeout(() => openNextMetaLead(advanceFrom), 120);
+  }
+
+  function closeOutcomeMenu() {
+    const menu = document.getElementById("mbwa-outcome-menu");
+    if (!menu) return;
+    document.querySelector("[aria-controls='mbwa-outcome-menu'][aria-expanded='true']")?.setAttribute("aria-expanded", "false");
+    menu.remove();
+  }
+
+  function openOutcomeMenu(anchor, key, advanceFrom) {
+    const wasOpen = anchor.getAttribute("aria-expanded") === "true";
+    closeOutcomeMenu();
+    if (wasOpen) return;
+    const current = state.outcomes?.[key]?.status || "";
+    const menu = el("div");
+    menu.id = "mbwa-outcome-menu";
+    menu.setAttribute("role", "menu");
+    const add = (value, label) => {
+      const item = el("button", `mbwa-menu-item${value === current ? " is-current" : ""}`);
+      item.type = "button";
+      item.setAttribute("role", "menuitemradio");
+      item.setAttribute("aria-checked", String(value === current));
+      item.dataset.tone = OUTCOME_TONES[value] || "muted";
+      item.append(el("i"), el("span", "", label));
+      item.addEventListener("click", (event) => {
+        stop(event);
+        closeOutcomeMenu();
+        void saveOutcome(key, value, advanceFrom);
       });
-      host.append(select);
+      menu.append(item);
+    };
+    Object.entries(OUTCOMES).forEach(([value, label]) => add(value, label));
+    if (current) {
+      menu.append(el("hr"));
+      add("", "Clear outcome");
     }
+    document.documentElement.append(menu);
+    const box = anchor.getBoundingClientRect();
+    const left = Math.min(box.left, innerWidth - menu.offsetWidth - 8);
+    const below = box.bottom + 6 + menu.offsetHeight < innerHeight;
+    menu.style.left = `${Math.max(8, left)}px`;
+    menu.style.top = `${below ? box.bottom + 6 : box.top - menu.offsetHeight - 6}px`;
+    anchor.setAttribute("aria-expanded", "true");
+    menu.querySelector(".is-current, .mbwa-menu-item")?.focus();
+  }
+
+  function statusChip(view) {
+    const chip = el("span", `mbwa-chip mbwa-chip--${view.tone}`);
+    chip.title = view.hint;
+    if (view.status === "linked" || view.status === "available") chip.insertAdjacentHTML("afterbegin", WA_ICON);
+    chip.append(el("span", "", view.label));
+    return chip;
+  }
+
+  function outcomeButton(key, name, advanceFrom) {
+    const status = state.outcomes?.[key]?.status || "";
+    const button = el("button", `mbwa-outcome${status ? " is-set" : ""}`);
+    button.type = "button";
+    button.dataset.tone = OUTCOME_TONES[status] || "muted";
+    button.setAttribute("aria-haspopup", "menu");
+    button.setAttribute("aria-controls", "mbwa-outcome-menu");
+    button.setAttribute("aria-expanded", "false");
+    button.setAttribute("aria-label", `Outcome for ${name}: ${status ? OUTCOMES[status] : "not set"}`);
+    button.append(el("span", "", status ? OUTCOMES[status] : "Outcome"));
+    button.insertAdjacentHTML("beforeend", CHEVRON);
+    button.addEventListener("click", (event) => {
+      stop(event);
+      openOutcomeMenu(button, key, advanceFrom);
+    });
+    return button;
+  }
+
+  function whatsAppButton(phone) {
+    const button = el("button", "mbwa-wa-button");
+    button.type = "button";
+    button.title = `Message ${phone} on WhatsApp (V)`;
+    button.setAttribute("aria-label", `Message ${phone} on WhatsApp`);
+    button.innerHTML = WA_ICON;
+    button.addEventListener("click", (event) => {
+      stop(event);
+      openPhone(phone);
+    });
+    return button;
+  }
+
+  // Status, outcome and a WhatsApp shortcut on their own line, so the name keeps its full width.
+  function leadLine({ view, key, name, phone, advanceFrom }) {
+    const line = el("div", "mbwa-row-line");
+    line.append(statusChip(view), outcomeButton(key, name, advanceFrom));
+    if (phone) line.append(whatsAppButton(phone));
+    line.addEventListener("click", (event) => event.stopPropagation());
+    return line;
+  }
+
+  // The first ancestor of the title that stacks other lines (the preview) below it.
+  function textColumn(item) {
+    let node = item.titleSurface;
+    while (node.parentElement && node.parentElement !== item.row) {
+      const parent = node.parentElement;
+      const bottom = node.getBoundingClientRect().bottom;
+      if ([...parent.children].some((child) => child !== node && !child.classList.contains("mbwa-row-line")
+        && child.getBoundingClientRect().top >= bottom - 2 && child.textContent.trim())) return parent;
+      node = parent;
+    }
+    return null;
+  }
+
+  function syncRowLine(item, result, messenger) {
+    const view = statusFor(result);
     const key = outcomeKey(messenger);
-    select.dataset.outcomeKey = key;
-    select.value = state.outcomes?.[key]?.status || "";
+    item.row.dataset.mbwaStatus = result.status;
+    const signature = [view.status, view.label, key, state.outcomes?.[key]?.status || "", messenger.phone || ""].join("|");
+    let line = item.row.querySelector(".mbwa-row-line");
+    if (line?.dataset.signature === signature) return;
+    const column = line?.parentElement || textColumn(item);
+    if (!column) return;
+    const next = leadLine({ view, key, name: messenger.name, phone: messenger.phone, advanceFrom: item.row });
+    next.dataset.signature = signature;
+    if (line) line.replaceWith(next);
+    else column.append(next);
   }
 
   function syncFilterButton(unconfirmed) {
@@ -442,22 +546,22 @@
     let button = document.getElementById("mbwa-filter");
     if (!host) return button?.remove();
     if (!button) {
-      button = document.createElement("button");
+      button = el("button", "mbwa-filter");
       button.id = "mbwa-filter";
       button.type = "button";
-      button.className = "mbwa-filter";
-      button.innerHTML = `<svg viewBox="0 0 20 20" aria-hidden="true"><path d="M4 4.5h12v8H9l-3.5 3v-3H4z"/><path d="m6 6 8 6"/></svg><span></span>`;
+      button.innerHTML = `${WA_ICON}<span>To check</span><b></b>`;
       button.addEventListener("click", (event) => {
-        event.preventDefault();
-        event.stopPropagation();
+        stop(event);
         filterOn = !filterOn;
         sessionStorage.setItem(FILTER_KEY, filterOn ? "1" : "0");
         void runSync();
       });
       host.append(button);
     }
-    button.querySelector("span").textContent = unconfirmed > 99 ? "99+" : String(unconfirmed);
-    button.setAttribute("aria-label", `${filterOn ? "Show all conversations" : "Show Messenger conversations not confirmed on WhatsApp"}. ${unconfirmed} discovered.`);
+    button.querySelector("b").textContent = unconfirmed > 999 ? "999+" : String(unconfirmed);
+    button.title = filterOn ? "Back to all conversations"
+      : "Messenger leads not yet confirmed on WhatsApp, kept even after Meta unloads them";
+    button.setAttribute("aria-label", `${filterOn ? "Show all conversations" : "Show Messenger leads to check on WhatsApp"}. ${unconfirmed} to check.`);
     button.setAttribute("aria-pressed", String(filterOn));
   }
 
@@ -473,76 +577,159 @@
       queue?.remove();
       return;
     }
-    if (queue?.contains(document.activeElement) && document.activeElement instanceof HTMLSelectElement) return;
+    // Don't rebuild under the user while they're choosing an outcome.
+    if (queue?.contains(document.activeElement) || document.getElementById("mbwa-outcome-menu")) return;
 
     const firstRender = !queue;
     if (list.dataset.mbwaOriginalDisplay === undefined) list.dataset.mbwaOriginalDisplay = list.style.display || "";
     list.style.display = "none";
     if (!queue) {
-      queue = document.createElement("div");
-      queue.className = "mbwa-review-queue";
+      queue = el("div", "mbwa-review-queue");
       scroller.append(queue);
-    }
-    queue.replaceChildren();
-    if (!entries.length) {
-      const empty = document.createElement("p");
-      empty.className = "mbwa-review-empty";
-      empty.textContent = "No unchecked Messenger leads have been discovered yet. Turn this filter off and scroll to index more chats.";
-      queue.append(empty);
     }
     const selectedId = new URLSearchParams(location.search).get("selected_item_id");
     const selectedTitle = rows.find(({ row }) => row.getAttribute("aria-selected") === "true"
       || row.parentElement?.getAttribute("aria-selected") === "true")?.title;
+    const signature = JSON.stringify([selectedId, selectedTitle, entries.map((entry) => [entry.key, entry.result.status,
+      entry.messenger.phone, state.outcomes?.[outcomeKey(entry.messenger)]?.status])]);
+    if (queue.dataset.signature === signature) return;
+    queue.dataset.signature = signature;
+    queue.replaceChildren();
+
+    const header = el("div", "mbwa-review-header");
+    const heading = el("div");
+    heading.append(el("strong", "", `${entries.length} to check on WhatsApp`),
+      el("small", "", "N next lead · V open phone in WhatsApp"));
+    const exit = el("button", "mbwa-review-exit", "Show all");
+    exit.type = "button";
+    exit.addEventListener("click", () => {
+      filterOn = false;
+      sessionStorage.setItem(FILTER_KEY, "0");
+      void runSync();
+    });
+    header.append(heading, exit);
+    queue.append(header);
+
+    if (!entries.length) {
+      queue.append(el("p", "mbwa-review-empty",
+        "Nothing left to check. Turn this filter off and scroll Meta's list to discover more leads."));
+    }
     entries.forEach((entry) => {
-      const item = document.createElement("div");
-      item.className = "mbwa-review-item";
       const selected = entry.threadId ? entry.threadId === selectedId
         : selectedTitle && normalizedName(entry.title) === normalizedName(selectedTitle);
-      if (selected) item.classList.add("is-selected");
-      const open = document.createElement("button");
+      const item = el("div", `mbwa-review-item${selected ? " is-selected" : ""}`);
+      const open = el("button", "mbwa-review-open");
       open.type = "button";
-      open.className = "mbwa-review-open";
       open.setAttribute("aria-current", selected ? "true" : "false");
-      const avatar = document.createElement("span");
-      avatar.className = "mbwa-review-avatar";
-      avatar.textContent = entry.title.trim().charAt(0).toLocaleUpperCase() || "?";
-      const copy = document.createElement("span");
-      copy.className = "mbwa-review-copy";
-      const line = document.createElement("span");
-      line.className = "mbwa-review-line";
-      const title = document.createElement("strong");
-      title.textContent = entry.title;
-      const preview = document.createElement("small");
-      preview.textContent = entry.text.replace(/\s+/g, " ").replace(entry.title, "").trim().slice(0, 150) || "Messenger lead";
-      const badge = document.createElement("em");
-      const labels = {
-        available: "Has WhatsApp", saved: "WA saved · unchecked", possible: "Same name only",
-        unmatched: "Check WhatsApp", unknown: "Open to get phone"
-      };
-      badge.textContent = labels[entry.result.status] || "Needs review";
-      badge.className = `mbwa-review-status mbwa-review-status--${entry.result.status}`;
-      line.append(title, badge);
-      copy.append(line, preview);
-      open.append(avatar, copy);
+      const copy = el("span", "mbwa-review-copy");
+      const preview = entry.text.replace(/\s+/g, " ").replace(entry.title, "").trim().slice(0, 150) || "Messenger lead";
+      copy.append(el("strong", "", entry.title), el("small", "", preview));
+      open.append(el("span", "mbwa-review-avatar", entry.title.trim().charAt(0).toLocaleUpperCase() || "?"), copy);
       open.addEventListener("click", () => { void openReviewRecord(entry); });
-      const select = document.createElement("select");
-      select.className = "mbwa-review-outcome";
-      select.setAttribute("aria-label", `Outcome for ${entry.title}`);
-      select.innerHTML = `<option value="">Set outcome</option>${Object.entries(OUTCOMES)
-        .map(([value, text]) => `<option value="${value}">${text}</option>`).join("")}`;
-      select.value = state.outcomes?.[outcomeKey(entry.messenger)]?.status || "";
-      select.addEventListener("change", async () => {
-        const key = outcomeKey(entry.messenger);
-        if (select.value) state.outcomes[key] = { status: select.value, updatedAt: Date.now() };
-        else delete state.outcomes[key];
-        await storageSet({ [STATE_KEY]: state });
-        quickToast(select.value ? `${OUTCOMES[select.value]} saved` : "Outcome cleared");
-        await runSync();
-      });
-      item.append(open, select);
+      item.append(open, leadLine({
+        view: statusFor(entry.result),
+        key: outcomeKey(entry.messenger),
+        name: entry.title,
+        phone: entry.messenger.phone
+      }));
       queue.append(item);
     });
     if (firstRender) scroller.scrollTop = 0;
+  }
+
+  // ---- WhatsApp card in the contact panel ---------------------------------------------------
+
+  function sidebarSection() {
+    const walker = document.createTreeWalker(document.body, NodeFilter.SHOW_TEXT);
+    for (let node = walker.nextNode(); node; node = walker.nextNode()) {
+      if (node.nodeValue.trim() !== "About") continue;
+      let section = node.parentElement;
+      if (!section || section.closest("#mbwa-card") || section.getBoundingClientRect().left < innerWidth * .55) continue;
+      // Climb to the About block, stopping before the column that also holds the other sections.
+      while (section.parentElement && !/Labels|Notes|Outcomes|Facebook profile/.test(section.parentElement.innerText || "")) {
+        section = section.parentElement;
+      }
+      return section;
+    }
+    return null;
+  }
+
+  function activeLead(rows, whatsappRecords) {
+    const params = new URLSearchParams(location.search);
+    const threadType = params.get("thread_type");
+    if (!params.get("selected_item_id") || !threadType) return null;
+    const region = document.querySelector("[role='region'][aria-label^='Message list container']");
+    const fields = metaLeadFields(region?.innerText || "");
+    const selected = rows.find(({ row }) => row.getAttribute("aria-selected") === "true"
+      || row.parentElement?.getAttribute("aria-selected") === "true");
+    if (threadType !== "FB_MESSAGE") {
+      return { channel: "whatsapp", name: fields.fullName || selected?.title || "", phone: fields.phone || null };
+    }
+    const title = selected?.title || pendingMetaSelection?.title || fields.fullName || "";
+    const found = messengerRecord(title, selected?.text || "");
+    const messenger = { ...found, name: fields.fullName || found.name || title, phone: fields.phone || found.phone || null };
+    return { channel: "messenger", name: messenger.name, phone: messenger.phone, messenger,
+      result: metaMatchStatus(messenger, whatsappRecords) };
+  }
+
+  function syncSideCard(lead) {
+    let card = document.getElementById("mbwa-card");
+    const anchor = lead && sidebarSection();
+    if (!lead || !anchor) return card?.remove();
+    const key = lead.messenger ? outcomeKey(lead.messenger) : null;
+    const signature = JSON.stringify([lead.channel, lead.name, lead.phone, lead.result?.status,
+      lead.result && statusFor(lead.result).label, key && state.outcomes?.[key]?.status]);
+    if (card?.dataset.signature === signature && card.nextElementSibling === anchor) return;
+    card?.remove();
+    card = el("section", "mbwa-card");
+    card.id = "mbwa-card";
+    card.dataset.signature = signature;
+    card.setAttribute("aria-label", "WhatsApp");
+
+    const head = el("div", "mbwa-card-head");
+    head.append(el("h3", "", "WhatsApp"));
+    if (lead.result) head.append(statusChip(statusFor(lead.result)));
+    card.append(head);
+
+    if (lead.phone) {
+      const phoneRow = el("div", "mbwa-card-phone");
+      phoneRow.append(el("span", "", lead.phone));
+      const actions = el("div", "mbwa-card-actions");
+      const action = (label, className, handler) => {
+        const button = el("button", className, label);
+        button.type = "button";
+        button.addEventListener("click", handler);
+        actions.append(button);
+      };
+      action("Message", "is-primary", () => openPhone(lead.phone));
+      action("Call", "", () => openPhone(lead.phone, "call"));
+      action("Copy", "", () => copyPhone(lead.phone));
+      card.append(phoneRow, actions);
+    } else {
+      card.append(el("p", "mbwa-card-note", "No phone number in this conversation yet. It appears once the lead form is answered."));
+    }
+
+    if (lead.result) {
+      const view = statusFor(lead.result);
+      card.append(el("p", "mbwa-card-note", view.folder ? `In your WhatsApp group ${view.folder}.` : view.hint + "."));
+      const outcomes = el("div", "mbwa-card-outcomes");
+      outcomes.setAttribute("role", "radiogroup");
+      outcomes.setAttribute("aria-label", "Outcome");
+      const current = state.outcomes?.[key]?.status || "";
+      Object.entries(OUTCOMES).forEach(([value, label]) => {
+        const button = el("button", value === current ? "is-current" : "", label);
+        button.type = "button";
+        button.dataset.tone = OUTCOME_TONES[value];
+        button.setAttribute("role", "radio");
+        button.setAttribute("aria-checked", String(value === current));
+        button.addEventListener("click", () => void saveOutcome(key, value === current ? "" : value,
+          value === current ? undefined : null));
+        outcomes.append(button);
+      });
+      card.append(el("span", "mbwa-card-label", "Outcome"), outcomes);
+    }
+    card.append(el("small", "mbwa-card-keys", "N next lead · V open phone in WhatsApp"));
+    anchor.before(card);
   }
 
   async function sync() {
@@ -563,8 +750,7 @@
         item.row.classList.remove("mbwa-filtered-out");
         if (item.channel !== "Messenger") {
           item.row.removeAttribute("data-mbwa-status");
-          item.row.querySelector(".mbwa-status")?.remove();
-          item.row.querySelector(".mbwa-outcome")?.remove();
+          item.row.querySelector(".mbwa-row-line")?.remove();
           if (filterOn) item.row.classList.add("mbwa-filtered-out");
           return;
         }
@@ -572,12 +758,13 @@
         const result = metaMatchStatus(messenger, whatsappRecords);
         const resolved = result.status === "linked" || result.status === "available"
           || Boolean(state.outcomes?.[outcomeKey(messenger)]);
-        setStatus(item, result, messenger);
+        syncRowLine(item, result, messenger);
         metaQueue.push({ ...item, messenger, result, resolved });
         if (filterOn && resolved) item.row.classList.add("mbwa-filtered-out");
       });
       syncFilterButton(persistentQueue.length);
       syncReviewQueue(rows, persistentQueue);
+      syncSideCard(activeLead(rows, whatsappRecords));
       syncPhoneActions();
     } finally {
       syncing = false;
@@ -611,6 +798,7 @@
 
   document.addEventListener("click", (event) => {
     if (!event.target.closest?.("#mbwa-phone-bubble, .mbwa-phone")) closePhoneBubble();
+    if (!event.target.closest?.("#mbwa-outcome-menu, .mbwa-outcome")) closeOutcomeMenu();
     const row = event.target.closest?.("[role='presentation']");
     const title = row?.querySelector("[data-surface$='/lib:thread_title']")?.textContent?.trim();
     if (title && row.querySelector("img[alt='Messenger']")) {
@@ -621,7 +809,10 @@
     }
   }, true);
   document.addEventListener("keydown", (event) => {
-    if (event.key === "Escape") closePhoneBubble();
+    if (event.key === "Escape") {
+      closePhoneBubble();
+      closeOutcomeMenu();
+    }
     const target = event.target;
     if (target instanceof HTMLInputElement || target instanceof HTMLTextAreaElement
       || target instanceof HTMLSelectElement || target?.isContentEditable

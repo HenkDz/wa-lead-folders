@@ -281,7 +281,11 @@ test("persists a Meta review queue beyond the current virtualized window", () =>
   assert.doesNotMatch(meta, /function openReviewRecord[\s\S]{0,160}filterOn = false/);
   assert.match(meta, /entry\.threadId === selectedId/);
   assert.match(meta, /aria-current/);
-  assert.match(meta, /queue\?\.contains\(document\.activeElement\).*HTMLSelectElement/);
+  assert.match(meta, /queue\?\.contains\(document\.activeElement\) \|\| document\.getElementById\("mbwa-outcome-menu"\)/);
+  assert.match(meta, /function syncRowLine/);
+  assert.match(meta, /function syncSideCard/);
+  assert.match(meta, /anchor\.before\(card\)/);
+  assert.doesNotMatch(meta, /host\.append\(select\)/);
   assert.match(meta, /result\.status === "linked" \|\| result\.status === "available"/);
   assert.match(meta, /looseMatches\.length === 1/);
   assert.match(whatsapp, /waLeadFoldersQuickOpened/);
